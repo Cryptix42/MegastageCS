@@ -1,0 +1,27 @@
+; *************************
+; Project: MegastageCS
+; File: MegastageCS.main.dasm
+; *************************
+:MAIN
+ias interrupt_manager
+
+:pause
+set a, 0
+set pc, pause
+
+:end
+set pc, end
+
+.include HWdrivers\Clock.drv.dasm
+.include HWdrivers\FFA.drv.dasm
+.include HWdrivers\HTA-90.drv.dasm
+.include HWdrivers\Keyboard.drv.dasm
+.include HWdrivers\lem1802.drv.dasm
+.include HWdrivers\m35fd.drv.dasm
+.include HWdrivers\NCC-1701.drv.dasm
+.include HWdrivers\PPS.drv.dasm
+.include HWdrivers\S8MD.drv.dasm
+.include HWdrivers\XLCMG.drv.dasm
+.include Managers\Interrupt.mgr.dasm
+.include Data\CONST.dat.dasm
+.include Data\ALLOC.dat.dasm

@@ -1,0 +1,117 @@
+; *************************
+; Project: MegastageCS
+; File: lem1802.drv.dasm
+; Finished! untested
+; *************************
+.define lem1802_id_a 0xf615
+.define lem1802_id_b 0x7349
+:lem1802_index dat 0
+:lem1802 dat 0
+
+:lem1802_select;Param A. "selects" a lem1802 for the lem1802 functions to interact with.
+set push, a
+set push, b
+set push, c
+set push, i
+set push, j
+set push, x
+set push, y
+set push, z
+set push, ex
+set [lem1802_index], a
+hwn i
+set j, 0xffff
+set z, a
+:lem1802_search_loop
+add j, 1
+hwq j
+ife a, lem1802_id_a
+ife b, lem1802_id_b
+sub z, 1
+ife z, 0xffff
+set [lem1802], j
+ifn z, 0xffff
+set pc, lem1802_search_loop
+set ex, pop
+set z, pop
+set y, pop
+set x, pop
+set j, pop
+set i, pop
+set c, pop
+set b, pop
+set a, pop
+set pc, pop
+
+:lem1802_amount;Return A. Returns the number of lem1802s in A.
+set push, b
+set push, c
+set push, i
+set push, j
+set push, x
+set push, y
+set push, z
+set push, ex
+hwn i
+set j, 0xffff
+set z, 0
+:lem1802_search_loop2
+add j, 1
+hwq j
+ife a, lem1802_id_a
+ife b, lem1802_id_b
+add z, 1
+ifn j, i
+set pc, lem1802_search_loop2
+set a, z
+set ex, pop
+set z, pop
+set y, pop
+set x, pop
+set j, pop
+set i, pop
+set c, pop
+set b, pop
+set pc, pop
+
+:lem1802_map_VRAM;Param B. B is the RAM address in which to start mapping the VRAM.
+set push, a
+set a, 0
+hwi [lem1802]
+set a, pop
+set pc, pop
+
+:lem1802_map_font;Param B. B is the RAM address in which to start mapping the font.
+set push, a
+set a, 1
+hwi [lem1802]
+set a, pop
+set pc, pop
+
+:lem1802_map_palette;Param B. B is the RAM address in which to start mapping the palette.
+set push, a
+set a, 2
+hwi [lem1802]
+set a, pop
+set pc, pop
+
+:lem1802_change_border;Param B. B is the palette index in which to change the border to.
+set push, a
+set a, 3
+hwi [lem1802]
+set a, pop
+set pc, pop
+
+:lem1802_dump_font;Param B. B is the RAM address in which to start dumping the font.
+set push, a
+set a, 4
+hwi [lem1802]
+set a, pop
+set pc, pop
+
+:lem1802_dump_palette;Param B. B is the RAM address in which to start dumping the palette.
+set push, a
+set a, 5
+hwi [lem1802]
+set a, pop
+set pc, pop

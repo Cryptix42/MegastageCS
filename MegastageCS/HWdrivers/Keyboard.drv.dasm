@@ -1,0 +1,166 @@
+; *************************
+; Project: MegastageCS
+; File: Keyboard.drv.dasm
+; Finished! untested
+; *************************
+.define keyboard_id_a 0x7406
+.define keyboard_id_b 0x30cf
+:keyboard_index dat 0
+:keyboard dat 0
+
+:keyboard_select;Param A. "selects" a keyboard for the keyboard functions to interact with.
+set push, a
+set push, b
+set push, c
+set push, i
+set push, j
+set push, x
+set push, y
+set push, z
+set push, ex
+set [keyboard_index], a
+hwn i
+set j, 0xffff
+set z, a
+:keyboard_search_loop
+add j, 1
+hwq j
+ife a, keyboard_id_a
+ife b, keyboard_id_b
+        sub z, 1
+ife z, 0xffff
+        set [keyboard], j
+ifn z, 0xffff
+        set pc, keyboard_search_loop
+set ex, pop
+set z, pop
+set y, pop
+set x, pop
+set j, pop
+set i, pop
+set c, pop
+set b, pop
+set a, pop
+set pc, pop
+
+:keyboard_amount;Return A. Returns the number of keyboards in A.
+set push, b
+set push, c
+set push, i
+set push, j
+set push, x
+set push, y
+set push, z
+set push, ex
+hwn i
+set j, 0xffff
+set z, 0
+:keyboard_search_loop2
+add j, 1
+hwq j
+ife a, keyboard_id_a
+ife b, keyboard_id_b
+add z, 1
+ifn j, i
+set pc, keyboard_search_loop2
+set a, z
+set ex, pop
+set z, pop
+set y, pop
+set x, pop
+set j, pop
+set i, pop
+set c, pop
+set b, pop
+set pc, pop
+
+:keyboard_clear_buffer;Clears the keyboard buffer.
+set push, a
+set a, 0
+hwi [clock]
+set a, pop
+set pc, pop
+
+:keyboard_read_buffer;Return C. Reads the keyboard buffer and returns the ASCII value in A.
+set push, a
+set a, 1
+hwi [clock]
+set a, pop
+set pc, pop
+
+:keyboard_check_keytype;Return C. Reads the keyboard buffer and sets C to 1 is the key in B was typed.
+set push, a
+set a, 2
+hwi [clock]
+set a, pop
+set pc, pop
+
+:keyboard_int_set;Param A. If A is nonzero, then interrupts will be turned on. If A is zero, the interrupts will be turned off.
+set push, a
+set push, b
+set push, c
+set c, a
+set a, 3
+set b, [keyboard_index]
+bor b, 0x0200
+ife c, 0
+set b, 0
+hwi [keyboard]
+set c, pop
+set b, pop
+set a, pop
+set pc, pop
+
+;Keys
+.define key_0 0x30
+.define key_1 0x31
+.define key_2 0x32
+.define key_3 0x33
+.define key_4 0x34
+.define key_5 0x35
+.define key_6 0x36
+.define key_7 0x37
+.define key_8 0x38
+.define key_9 0x39
+
+.define key_lower_to_upper_diff 0x20
+
+.define key_a 0x61
+.define key_b 0x62
+.define key_c 0x63
+.define key_d 0x64
+.define key_e 0x65
+.define key_f 0x66
+.define key_g 0x67
+.define key_h 0x68
+.define key_i 0x69
+.define key_j 0x6a
+.define key_k 0x6b
+.define key_l 0x6c
+.define key_m 0x6d
+.define key_n 0x6e
+.define key_o 0x6f
+.define key_p 0x70
+.define key_q 0x71
+.define key_r 0x72
+.define key_s 0x73
+.define key_t 0x74
+.define key_u 0x75
+.define key_v 0x76
+.define key_w 0x77
+.define key_x 0x78
+.define key_y 0x79
+.define key_z 0x7a
+
+.define key_space 0x20
+.define key_backspace 0x10
+.define key_enter 0x11
+.define key_insert 0x12
+.define key_delete 0x13
+.define key_shift 0x90
+.define key_control 0x91
+
+.define key_arrow_up 0x80
+.define key_arrow_down 0x81
+.define key_arrow_left 0x82
+.define key_arrow_right 0x83
