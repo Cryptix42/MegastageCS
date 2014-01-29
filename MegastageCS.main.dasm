@@ -1,0 +1,136 @@
+; *************************
+; Project: MegastageCS
+; File: MegastageCS.main.dasm
+; *************************
+:init
+ias interrupt_manager
+set a, 0
+jsr init_screen
+jsr s8md_select
+jsr xlcmg_select
+jsr xlcmg_assigner
+:MAIN
+set a, 0xf000
+set b, VRAM
+set c, 384
+jsr memory_bor
+set a, 0
+set b, 0
+set c, 0
+:key_control_loop
+jsr keyboard_read_buffer
+;directional
+ife c, key_w
+jsr w_pitch
+ife c, key_a
+jsr a_pitch
+ife c, key_s
+jsr s_yaw
+ife c, key_d
+jsr d_yaw
+;roll
+ife c, key_q
+jsr q_roll
+ife c, key_e
+jsr e_roll
+;throttle
+ife c, key_control
+jsr control_throttle
+ife c, key_shift
+jsr shift_throttle
+set pc, key_control_loop
+
+:w_pitch
+set push, a
+set push, b
+set a, [gyro_z_index]
+jsr xlcmg_select
+add b, 100
+jsr xlcmg_set_torque_level
+set b, pop
+set a, pop
+set pc, pop
+
+:a_pitch
+set push, a
+set push, b
+set a, [gyro_z_index]
+jsr xlcmg_select
+sub b, 100
+jsr xlcmg_set_torque_level
+set b, pop
+set a, pop
+set pc, pop
+
+:s_yaw
+set push, a
+set push, b
+set a, [gyro_y_index]
+jsr xlcmg_select
+sub b, 100
+jsr xlcmg_set_torque_level
+set b, pop
+set a, pop
+set pc, pop
+
+:d_yaw
+set push, a
+set push, b
+set a, [gyro_y_index]
+jsr xlcmg_select
+sub b, 100
+jsr xlcmg_set_torque_level
+set b, pop
+set a, pop
+set pc, pop
+
+:q_roll
+set push, a
+set push, b
+set a, [gyro_x_index]
+jsr xlcmg_select
+sub b, 100
+jsr xlcmg_set_torque_level
+set b, pop
+set a, pop
+set pc, pop
+
+:e_roll
+set push, a
+set push, b
+set a, [gyro_x_index]
+jsr xlcmg_select
+sub b, 100
+jsr xlcmg_set_torque_level
+set b, pop
+set a, pop
+set pc, pop
+
+:control_throttle
+set pc, pop
+
+:shift_throttle
+set pc, pop
+
+:pause
+set a, 0
+set pc, pause
+
+:end
+set pc, end
+
+.include HWdrivers\Clock.drv.dasm
+.include HWdrivers\FFA.drv.dasm
+.include HWdrivers\HTA-90.drv.dasm
+.include HWdrivers\Keyboard.drv.dasm
+.include HWdrivers\LEM1802.drv.dasm
+;.include HWdrivers\M35FD.drv.dasm ====== NOT YET
+.include HWdrivers\NCC-1701.drv.dasm
+.include HWdrivers\PPS.drv.dasm
+.include HWdrivers\S8MD.drv.dasm
+.include HWdrivers\XLCMG.drv.dasm
+.include Libraries\Display.lib.dasm
+.include Libraries\Utility.lib.dasm
+.include Managers\Interrupt.mgr.dasm
+.include Data\CONST.dat.dasm
+.include Data\ALLOC.dat.dasm

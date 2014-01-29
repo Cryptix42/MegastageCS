@@ -1,0 +1,98 @@
+; *************************
+; Project: MegastageCS
+; File: S8MD.drv.dasm
+; *************************
+.define s8md_id_a 0x6730
+.define s8md_id_b 0xa8fb
+:s8md dat 0
+:s8md_index dat 0
+
+:s8md_select
+set push, a
+set push, b
+set push, c
+set push, i
+set push, j
+set push, x
+set push, y
+set push, z
+set push, ex
+set [s8md_index], a
+hwn i
+set j, 0xffff
+set z, a
+:s8md_search_loop
+add j, 1
+hwq j
+ife a, s8md_id_a
+ife b, s8md_id_b
+sub z, 1
+ife z, 0xffff
+set [s8md], j
+ifn z, 0xffff
+set pc, s8md_search_loop
+set ex, pop
+set z, pop
+set y, pop
+set x, pop
+set j, pop
+set i, pop
+set c, pop
+set b, pop
+set a, pop
+set pc, pop
+
+:s8md_amount
+set push, b
+set push, c
+set push, i
+set push, j
+set push, x
+set push, y
+set push, z
+set push, ex
+hwn i
+set j, 0xffff
+set z, 0
+:s8md_search_loop2
+add j, 1
+hwq j
+ife a, s8md_id_a
+ife b, s8md_id_b
+add z, 1
+ifn j, i
+set pc, s8md_search_loop2
+set a, z
+set ex, pop
+set z, pop
+set y, pop
+set x, pop
+set j, pop
+set i, pop
+set c, pop
+set b, pop
+set pc, pop
+
+;param b.
+:s8md_set_power
+set push, a
+set a, 0
+hwi [s8md]
+set a, pop
+set pc, pop
+
+;return b, c.
+:s8md_get_status
+set push, a
+set a, 1
+hwi [s8md]
+set a, pop
+set pc, pop
+
+;return b. b = 0000xxxxyyyyzzzz vector format
+:s8md_get_vector
+set push, a
+set a, 2
+hwi [s8md]
+set a, pop
+set pc, pop

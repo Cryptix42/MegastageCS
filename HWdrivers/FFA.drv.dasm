@@ -1,0 +1,88 @@
+; *************************
+; Project: MegastageCS
+; File: FFA.drv.dasm
+; *************************
+.define ffa_id_a 0xbc64
+.define ffa_id_b 0x3846
+:ffa dat 0
+:ffa_index dat 0
+
+:ffa_select
+set push, a
+set push, b
+set push, c
+set push, i
+set push, j
+set push, x
+set push, y
+set push, z
+set push, ex
+set [ffa_index], a
+hwn i
+set j, 0xffff
+set z, a
+:ffa_search_loop
+add j, 1
+hwq j
+ife a, ffa_id_a
+ife b, ffa_id_b
+sub z, 1
+ife z, 0xffff
+set [ffa], j
+ifn z, 0xffff
+set pc, ffa_search_loop
+set ex, pop
+set z, pop
+set y, pop
+set x, pop
+set j, pop
+set i, pop
+set c, pop
+set b, pop
+set a, pop
+set pc, pop
+
+:ffa_amount
+set push, b
+set push, c
+set push, i
+set push, j
+set push, x
+set push, y
+set push, z
+set push, ex
+hwn i
+set j, 0xffff
+set z, 0
+:ffa_search_loop2
+add j, 1
+hwq j
+ife a, ffa_id_a
+ife b, ffa_id_b
+add z, 1
+ifn j, i
+set pc, ffa_search_loop2
+set a, z
+set ex, pop
+set z, pop
+set y, pop
+set x, pop
+set j, pop
+set i, pop
+set c, pop
+set b, pop
+set pc, pop
+
+:ffa_orbital_state_vector
+set push, a
+set a, 0
+hwi [ffa]
+set a, pop
+set pc, pop
+
+:ffa_field_data
+set push, a
+set a, 1
+hwi [ffa]
+set a, pop
+set pc, pop
