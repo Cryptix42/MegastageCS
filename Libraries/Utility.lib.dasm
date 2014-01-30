@@ -63,9 +63,9 @@ set push, a
 set push, b
 set push, c
 set push, i
-set a, 0xffff
 jsr xlcmg_amount
 set c, a
+set a, 0xffff
 :xlcmg_assgn_loop
 add a, 1
 set [OSerror], 0
@@ -89,8 +89,11 @@ set a, pop
 set pc, pop
 
 :gyro_x_index dat 0 ;roll gyro
-:gyro_y_index dat 0 ;yaw gyro
-:gyro_z_index dat 0 ;pitch gyro
+:gyro_y_index dat 1 ;yaw gyro
+:gyro_z_index dat 2 ;pitch gyro
+:gyro_x_torque dat 0
+:gyro_y_torque dat 0
+:gyro_z_torque dat 0
 
 :s8md_forwards_index dat 0
 :s8md_reverse_index dat 0

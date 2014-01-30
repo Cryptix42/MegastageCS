@@ -84,21 +84,21 @@ set pc, pop
 :keyboard_clear_buffer;Clears the keyboard buffer.
 set push, a
 set a, 0
-hwi [clock]
+hwi [keyboard]
 set a, pop
 set pc, pop
 
 :keyboard_read_buffer;Return C. Reads the keyboard buffer and returns the ASCII value in C.
 set push, a
 set a, 1
-hwi [clock]
+hwi [keyboard]
 set a, pop
 set pc, pop
 
 :keyboard_check_keytype;Return C. Reads the keyboard buffer and sets C to 1 is the key in B was typed.
 set push, a
 set a, 2
-hwi [clock]
+hwi [keyboard]
 set a, pop
 set pc, pop
 

@@ -6,7 +6,14 @@
 ias interrupt_manager
 set a, 0
 jsr init_screen
-;jsr xlcmg_assigner
+set a, VRAM
+set c, vram_size
+set b, text_color
+jsr memory_bor
+set a, 0
+set b, 0
+set c, 0
+jsr xlcmg_assigner
 jsr update_screen
 jsr keyboard_select
 :key_control_loop
@@ -23,16 +30,18 @@ ife [page], 3
 set pc, target_key_loop
 ife c, key_w
 jsr w_pitch
-ife c, key_a
-jsr a_pitch
 ife c, key_s
-jsr s_yaw
+jsr s_pitch
+ife c, key_a
+jsr a_yaw
 ife c, key_d
 jsr d_yaw
 ife c, key_q
 jsr q_roll
 ife c, key_e
 jsr e_roll
+ife c, key_x
+jsr x_kill_rot
 ife c, key_control
 jsr control_throttle
 ife c, key_shift
@@ -87,34 +96,59 @@ sub [page], 1
 jsr update_screen
 set pc, pop
 
+:x_kill_rot
+set push, a
+set push, b
+set a, [gyro_z_index]
+jsr xlcmg_select
+set [gyro_z_torque], 0
+set b, [gyro_z_torque]
+jsr xlcmg_set_torque_level
+set a, [gyro_y_index]
+jsr xlcmg_select
+set [gyro_y_torque], 0
+set b, [gyro_y_torque]
+jsr xlcmg_set_torque_level
+set a, [gyro_x_index]
+jsr xlcmg_select
+set [gyro_x_torque], 0
+set b, [gyro_x_torque]
+jsr xlcmg_set_torque_level
+set b, pop
+set a, pop
+set pc, pop
+
 :w_pitch
 set push, a
 set push, b
-set a, [gyro_z_index]
+set a, [gyro_x_index]
 jsr xlcmg_select
-add b, 100
+set [gyro_x_torque], 10000
+set b, [gyro_x_torque]
 jsr xlcmg_set_torque_level
 set b, pop
 set a, pop
 set pc, pop
 
-:a_pitch
+:s_pitch
 set push, a
 set push, b
-set a, [gyro_z_index]
+set a, [gyro_x_index]
 jsr xlcmg_select
-sub b, 100
+set [gyro_x_torque], -10000
+set b, [gyro_x_torque]
 jsr xlcmg_set_torque_level
 set b, pop
 set a, pop
 set pc, pop
 
-:s_yaw
+:a_yaw
 set push, a
 set push, b
 set a, [gyro_y_index]
 jsr xlcmg_select
-sub b, 100
+set [gyro_y_torque], -10000
+set b, [gyro_y_torque]
 jsr xlcmg_set_torque_level
 set b, pop
 set a, pop
@@ -125,7 +159,8 @@ set push, a
 set push, b
 set a, [gyro_y_index]
 jsr xlcmg_select
-sub b, 100
+set [gyro_y_torque], 10000
+set b, [gyro_y_torque]
 jsr xlcmg_set_torque_level
 set b, pop
 set a, pop
@@ -134,9 +169,10 @@ set pc, pop
 :q_roll
 set push, a
 set push, b
-set a, [gyro_x_index]
+set a, [gyro_z_index]
 jsr xlcmg_select
-sub b, 100
+set [gyro_z_torque], 10000
+set b, [gyro_z_torque]
 jsr xlcmg_set_torque_level
 set b, pop
 set a, pop
@@ -145,9 +181,10 @@ set pc, pop
 :e_roll
 set push, a
 set push, b
-set a, [gyro_x_index]
+set a, [gyro_z_index]
 jsr xlcmg_select
-sub b, 100
+set [gyro_z_torque], -10000
+set b, [gyro_z_torque]
 jsr xlcmg_set_torque_level
 set b, pop
 set a, pop
