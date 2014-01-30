@@ -147,7 +147,7 @@ set push, a
 set push, b
 set a, [gyro_y_index]
 jsr xlcmg_select
-set [gyro_y_torque], -10000
+set [gyro_y_torque], 10000
 set b, [gyro_y_torque]
 jsr xlcmg_set_torque_level
 set b, pop
@@ -159,7 +159,7 @@ set push, a
 set push, b
 set a, [gyro_y_index]
 jsr xlcmg_select
-set [gyro_y_torque], 10000
+set [gyro_y_torque], -10000
 set b, [gyro_y_torque]
 jsr xlcmg_set_torque_level
 set b, pop
