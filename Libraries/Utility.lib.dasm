@@ -2,48 +2,60 @@
 ; Project: MegastageCS
 ; File: Utility.lib.dasm
 ; *************************
-:memory_copy ;Param: A, B, and C. A = start of ram to be copied, B = start of ram to be copied to, C = length of both areas
+;Param A, B, and C.
+;Set A to area to be copied to, B to start of area to be copied from, and C to the length.
+;These functions will preform their respective operations on the specified sectors with the value in C.
+:memory_copy
 set push, a
 set push, b
 set push, c
-set push, i
-set [util_var1], a
-set a, 0xffff
+add c, a
+sub a, 1
 sub b, 1
 :mem_copy_loop
 add a, 1
 add b, 1
-set [b], [util_var1+a]
+set [a], [b]
 ifn a, c
 set pc, mem_copy_loop
-set i, pop
 set c, pop
 set b, pop
 set a, pop
 set pc, pop
-:util_var1 dat 0
 
-:memory_bor ;Param: A, B, and C. A = value to process with, B = start of ram to be processed, C = length of area
+:memory_bor ;Param: A, B, and C. A = start of ram to be processed, B = value to process with, C = length of area
+set push, a
+set push, b
+set push, c
+add c, a
+sub a, 1
+:mem_bor_loop
+add a, 1
+bor [a], b
+ifn a, c
+set pc, mem_bor_loop
+set c, pop
+set b, pop
+set a, pop
+set pc, pop
+
+:memory_fill;Param: A, B, and C. A = value to process with, B = start of ram to be processed, C = length of area
 set push, a
 set push, b
 set push, c
 set push, i
 add c, 1
 sub b, 1
-:mem_copy_loop2
+:mem_fill_loop
 sub c, 1
 add b, 1
-bor [b], a
+set [b], a
 ifn c, 0
-set pc, mem_copy_loop2
+set pc, mem_fill_loop
 set i, pop
 set c, pop
 set b, pop
 set a, pop
-set pc, pop
-
-:memory_fill
-
 set pc, pop
 
 :xlcmg_assigner
@@ -56,7 +68,10 @@ jsr xlcmg_amount
 set c, a
 :xlcmg_assgn_loop
 add a, 1
+set [OSerror], 0
 jsr xlcmg_select
+ife [OSerror], 1
+set pc, xlcmg_assgn_loop_brk
 jsr xlcmg_get_axis_vector
 ife b, 0x0100
 set [gyro_x_index], a
@@ -65,7 +80,8 @@ set [gyro_y_index], a
 ife b, 0x0001
 set [gyro_z_index], a
 ifn a, c
-set pc, xlcmg_assn_loop
+set pc, xlcmg_assgn_loop
+:xlcmg_assgn_loop_brk
 set i, pop
 set c, pop
 set b, pop

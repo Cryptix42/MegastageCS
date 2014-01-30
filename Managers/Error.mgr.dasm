@@ -1,0 +1,14 @@
+; *************************
+; Project: MegastageCS
+; File: Error.mgr.dasm
+; *************************
+:error_return;Return A. Returns the latest OS error since last call to this function.
+set a, [OSerror]
+set [OSerror], 0x0000
+set pc, pop
+
+:error_no_such_device
+set [OSerror], 0x0001
+set pc, pop
+
+:OSerror dat 0

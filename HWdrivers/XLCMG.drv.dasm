@@ -27,10 +27,17 @@ hwq j
 ife a, xlcmg_id_a
 ife b, xlcmg_id_b
 sub z, 1
+ife j, 0xffff
+ifn z, 0xffff
+jsr error_no_such_device
+ife j, 0xffff
+ifn z, 0xffff
+set pc, xlcmg_search_loop_brk
 ife z, 0xffff
 set [xlcmg], j
 ifn z, 0xffff
 set pc, xlcmg_search_loop
+:xlcmg_search_loop_brk
 set ex, pop
 set z, pop
 set y, pop

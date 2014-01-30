@@ -28,10 +28,17 @@ hwq j
 ife a, lem1802_id_a
 ife b, lem1802_id_b
 sub z, 1
+ife j, 0xffff
+ifn z, 0xffff
+jsr error_no_such_device
+ife j, 0xffff
+ifn z, 0xffff
+set pc, lem1802_search_loop_brk
 ife z, 0xffff
 set [lem1802], j
 ifn z, 0xffff
 set pc, lem1802_search_loop
+:lem1802_search_loop_brk
 set ex, pop
 set z, pop
 set y, pop

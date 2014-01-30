@@ -28,10 +28,17 @@ hwq j
 ife a, keyboard_id_a
 ife b, keyboard_id_b
 sub z, 1
+ife j, 0xffff
+ifn z, 0xffff
+jsr error_no_such_device
+ife j, 0xffff
+ifn z, 0xffff
+set pc, keyboard_search_loop_brk
 ife z, 0xffff
 set [keyboard], j
 ifn z, 0xffff
 set pc, keyboard_search_loop
+:keyboard_search_loop_brk
 set ex, pop
 set z, pop
 set y, pop

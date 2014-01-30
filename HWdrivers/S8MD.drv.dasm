@@ -27,10 +27,17 @@ hwq j
 ife a, s8md_id_a
 ife b, s8md_id_b
 sub z, 1
+ife j, 0xffff
+ifn z, 0xffff
+jsr error_no_such_device
+ife j, 0xffff
+ifn z, 0xffff
+set pc, s8md_search_loop_brk
 ife z, 0xffff
 set [s8md], j
 ifn z, 0xffff
 set pc, s8md_search_loop
+:s8md_search_loop_brk
 set ex, pop
 set z, pop
 set y, pop

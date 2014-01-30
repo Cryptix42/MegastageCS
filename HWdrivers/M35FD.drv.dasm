@@ -28,10 +28,17 @@ hwq j
 ife a, m35fd_id_a
 ife b, m35fd_id_b
 sub z, 1
+ife j, 0xffff
+ifn z, 0xffff
+jsr error_no_such_device
+ife j, 0xffff
+ifn z, 0xffff
+set pc, m35fd_search_loop_brk
 ife z, 0xffff
 set [m35fd], j
 ifn z, 0xffff
 set pc, m35fd_search_loop
+:m35fd_search_loop_brk
 set ex, pop
 set z, pop
 set y, pop

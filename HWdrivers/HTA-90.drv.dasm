@@ -27,10 +27,17 @@ hwq j
 ife a, hta90_id_a
 ife b, hta90_id_b
 sub z, 1
+ife j, 0xffff
+ifn z, 0xffff
+jsr error_no_such_device
+ife j, 0xffff
+ifn z, 0xffff
+set pc, hta90_search_loop_brk
 ife z, 0xffff
 set [hta90], j
 ifn z, 0xffff
 set pc, hta90_search_loop
+:hta90_search_loop_brk
 set ex, pop
 set z, pop
 set y, pop
