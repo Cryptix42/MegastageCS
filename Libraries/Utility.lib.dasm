@@ -95,5 +95,35 @@ set pc, pop
 :gyro_y_torque dat 0
 :gyro_z_torque dat 0
 
-:s8md_forwards_index dat 0
+:s8md_assigner
+set push, a
+set push, b
+set push, c
+set push, i
+jsr s8md_amount
+set c, a
+set a, 0xffff
+:s8md_assgn_loop
+add a, 1
+set [OSerror], 0
+jsr s8md_select
+ife [OSerror], 1
+set pc, s8md_assgn_loop_brk
+jsr s8md_get_vector
+ife b, 0b0000000000001001
+set [s8md_forward_index], a
+ife b, 0b0000000000000001
+set [s8md_reverse_index], a
+ifn a, c
+set pc, s8md_assgn_loop
+:s8md_assgn_loop_brk
+set i, pop
+set c, pop
+set b, pop
+set a, pop
+set pc, pop
+
+:s8md_forward_index dat 0
 :s8md_reverse_index dat 0
+:s8md_forward_power dat 0
+:s8md_reverse_power dat 0

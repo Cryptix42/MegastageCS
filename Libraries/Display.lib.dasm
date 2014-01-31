@@ -72,11 +72,11 @@ MOD [B+1], 10
 DIV [B], 10000 
 MOD [B], 10 
 ;ASCII processer
-bor [B+4], 0x0030
-bor [B+3], 0x0030
-bor [B+2], 0x0030
-bor [B+1], 0x0030
-bor [B], 0x0030
+bor [B+4], 0xf030
+bor [B+3], 0xf030
+bor [B+2], 0xf030
+bor [B+1], 0xf030
+bor [B], 0xf030
 set ex, pop
 set pc, pop
 
@@ -109,14 +109,14 @@ dat 0
 :screen_map1
 dat "==== MegastageCS v0.1 Indev ===="
 dat "        Ship Controls:          "
-dat " Shft & Ctr - Throttle          "
+dat "      F & R - Throttle          "
 dat "      W & A - Pitch             "
 dat "      S & D - Yaw               "
 dat "      Q & E - Roll              "
 dat "      < & > - Page              "
 dat "      Space - Update data       "
 dat "          X - Cut all torque    "
-dat "                                "
+dat "          C - Cut all throttle  "
 dat "                                "
 dat "            Page 1/5 >          "
 dat 0
