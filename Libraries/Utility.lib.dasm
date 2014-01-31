@@ -89,8 +89,8 @@ set a, pop
 set pc, pop
 
 :gyro_x_index dat 0 ;roll gyro
-:gyro_y_index dat 1 ;yaw gyro
-:gyro_z_index dat 2 ;pitch gyro
+:gyro_y_index dat 0 ;yaw gyro
+:gyro_z_index dat 0 ;pitch gyro
 :gyro_x_torque dat 0
 :gyro_y_torque dat 0
 :gyro_z_torque dat 0

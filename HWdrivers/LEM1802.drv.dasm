@@ -20,6 +20,7 @@ set push, z
 set push, ex
 set [lem1802_index], a
 hwn i
+sub i, 1
 set j, 0xffff
 set z, a
 :lem1802_search_loop
@@ -28,10 +29,10 @@ hwq j
 ife a, lem1802_id_a
 ife b, lem1802_id_b
 sub z, 1
-ife j, 0xffff
+ife j, i
 ifn z, 0xffff
 jsr error_no_such_device
-ife j, 0xffff
+ife j, i
 ifn z, 0xffff
 set pc, lem1802_search_loop_brk
 ife z, 0xffff
@@ -60,6 +61,7 @@ set push, y
 set push, z
 set push, ex
 hwn i
+sub i, 1
 set j, 0xffff
 set z, 0
 :lem1802_search_loop2

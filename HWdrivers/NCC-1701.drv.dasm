@@ -19,6 +19,7 @@ set push, z
 set push, ex
 set [ncc_index], a
 hwn i
+sub i, 1
 set j, 0xffff
 set z, a
 :ncc_search_loop
@@ -27,10 +28,17 @@ hwq j
 ife a, ncc_id_a
 ife b, ncc_id_b
 sub z, 1
+ife j, i
+ifn z, 0xffff
+jsr error_no_such_device
+ife j, i
+ifn z, 0xffff
+set pc, ncc_search_loop_brk
 ife z, 0xffff
 set [ncc], j
 ifn z, 0xffff
 set pc, ncc_search_loop
+:ncc_search_loop_brk
 set ex, pop
 set z, pop
 set y, pop
@@ -52,6 +60,7 @@ set push, y
 set push, z
 set push, ex
 hwn i
+sub i, 1
 set j, 0xffff
 set z, 0
 :ncc_search_loop2
