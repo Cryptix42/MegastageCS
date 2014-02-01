@@ -15,18 +15,6 @@ set b, 0
 set c, 0
 jsr xlcmg_assigner
 jsr s8md_assigner
-;engine initiator (may take 20 to 60 seconds)
-set a, [s8md_forward_index]
-jsr s8md_select
-set [s8md_forward_power], 1
-set b, [s8md_forward_power]
-jsr s8md_set_power
-set a, [s8md_reverse_index]
-jsr s8md_select
-set [s8md_reverse_power], 1
-set b, [s8md_reverse_power]
-jsr s8md_set_power
-;end of engine initiator
 jsr update_screen
 jsr keyboard_select
 :key_control_loop
@@ -54,13 +42,11 @@ jsr q_roll
 ife c, key_e
 jsr e_roll
 ife c, key_x
-jsr x_kill_rot
+jsr x_kill_throttle
 ife c, key_r
 jsr r_throttle
 ife c, key_f
 jsr f_throttle
-ife c, key_c
-jsr c_kill_throttle
 set pc, key_control_loop
 :target_key_loop
 ife c, key_1
@@ -111,7 +97,7 @@ sub [page], 1
 jsr update_screen
 set pc, pop
 
-:x_kill_rot
+:x_kill_rot;depricated
 set push, a
 set push, b
 set a, [gyro_z_index]
@@ -133,19 +119,13 @@ set b, pop
 set a, pop
 set pc, pop
 
-:c_kill_throttle ;sets both to 1 because the thrust is negligable and if it was 0 it wuld take a long time to start back up, 
-;also both their thrusts cancel eachother out.
+:x_kill_throttle
 set push, a
 set push, b
 set a, [s8md_forward_index]
 jsr s8md_select
 set [s8md_forward_power], 1
 set b, [s8md_forward_power]
-jsr s8md_set_power
-set a, [s8md_reverse_index]
-jsr s8md_select
-set [s8md_reverse_power], 1
-set b, [s8md_reverse_power]
 jsr s8md_set_power
 set b, pop
 set a, pop
@@ -156,7 +136,10 @@ set push, a
 set push, b
 set a, [gyro_x_index]
 jsr xlcmg_select
-set [gyro_x_torque], 10000
+ife [gyro_x_torque], 0
+set [gyro_x_torque], 50000
+ife [gyro_x_torque], -50000
+set [gyro_x_torque], 0
 set b, [gyro_x_torque]
 jsr xlcmg_set_torque_level
 set b, pop
@@ -168,7 +151,10 @@ set push, a
 set push, b
 set a, [gyro_x_index]
 jsr xlcmg_select
-set [gyro_x_torque], -10000
+ife [gyro_x_torque], 0
+set [gyro_x_torque], -50000
+ife [gyro_x_torque], 50000
+set [gyro_x_torque], 0
 set b, [gyro_x_torque]
 jsr xlcmg_set_torque_level
 set b, pop
@@ -180,7 +166,10 @@ set push, a
 set push, b
 set a, [gyro_y_index]
 jsr xlcmg_select
-set [gyro_y_torque], 10000
+ife [gyro_y_torque], 0
+set [gyro_y_torque], -50000
+ife [gyro_y_torque], 50000
+set [gyro_y_torque], 0
 set b, [gyro_y_torque]
 jsr xlcmg_set_torque_level
 set b, pop
@@ -192,7 +181,10 @@ set push, a
 set push, b
 set a, [gyro_y_index]
 jsr xlcmg_select
-set [gyro_y_torque], -10000
+ife [gyro_y_torque], 0
+set [gyro_y_torque], 50000
+ife [gyro_y_torque], -50000
+set [gyro_y_torque], 0
 set b, [gyro_y_torque]
 jsr xlcmg_set_torque_level
 set b, pop
@@ -204,7 +196,10 @@ set push, a
 set push, b
 set a, [gyro_z_index]
 jsr xlcmg_select
-set [gyro_z_torque], 10000
+ife [gyro_z_torque], 0
+set [gyro_z_torque], 50000
+ife [gyro_z_torque], -50000
+set [gyro_z_torque], 0
 set b, [gyro_z_torque]
 jsr xlcmg_set_torque_level
 set b, pop
@@ -216,40 +211,31 @@ set push, a
 set push, b
 set a, [gyro_z_index]
 jsr xlcmg_select
-set [gyro_z_torque], -10000
+ife [gyro_z_torque], 0
+set [gyro_z_torque], -50000
+ife [gyro_z_torque], 50000
+set [gyro_z_torque], 0
 set b, [gyro_z_torque]
 jsr xlcmg_set_torque_level
 set b, pop
 set a, pop
 set pc, pop
 
-:r_throttle
-set a, [s8md_reverse_index]
-jsr s8md_select
-ifl [s8md_reverse_power], 65500
-add [s8md_reverse_power], 100
-set b, [s8md_reverse_power]
-jsr s8md_set_power
+:f_throttle
 set a, [s8md_forward_index]
 jsr s8md_select
-ifg [s8md_forward_power], 100
-sub [s8md_forward_power], 100
+ifg [s8md_forward_power], 1000
+sub [s8md_forward_power], 10000
 set b, [s8md_forward_power]
 jsr s8md_set_power
 set pc, pop
 
-:f_throttle
+:r_throttle
 set a, [s8md_forward_index]
 jsr s8md_select
-ifl [s8md_forward_power], 65500
-add [s8md_forward_power], 100
+ifl [s8md_forward_power], 60000
+add [s8md_forward_power], 10000
 set b, [s8md_forward_power]
-jsr s8md_set_power
-set a, [s8md_reverse_index]
-jsr s8md_select
-ifg [s8md_reverse_power], 100
-sub [s8md_reverse_power], 100
-set b, [s8md_reverse_power]
 jsr s8md_set_power
 set pc, pop
 
