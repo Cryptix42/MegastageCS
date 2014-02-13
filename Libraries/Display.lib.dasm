@@ -39,6 +39,12 @@ set b, screen_map4
 ife [page], 4
 set b, screen_map5
 jsr memory_copy
+ife [page], 1
+jsr update_orbital_data
+ife [page], 2
+jsr update_times_data
+ife [page], 3
+jsr update_target_page
 set b, text_color
 jsr memory_bor
 set i, pop
@@ -47,44 +53,165 @@ set b, pop
 set a, pop
 set pc, pop
 
-;Param A, and B. Takes a hexadecimal number at A and returns to address B, the decimal equivalent in the form of a string.
-;A slight modification of StillNoNumber's code (http://www.0x10cforum.com/profile/2236555 _also known as NaNDummy)
-:convert_from_hex_16 ;(takes A as UInt, returns cth/n/ while each of them is a number between 0 and 9 and cth1 is the last digit) 
+:update_orbital_data
+set push, a
+set push, b
+set push, c
+set a, 1
+jsr ffa_select
+jsr hta90_select
+jsr ncc_select
+set c, pop
+set b, pop
+set a, pop
+set pc, pop
+
+:update_times_data
+set push, a
+set push, b
+set push, c
+
+set c, pop
+set b, pop
+set a, pop
+set pc, pop
+
+:update_target_page
+set push, a
+set push, b
+set push, c
+
+set c, pop
+set b, pop
+set a, pop
+set pc, pop
+
+:vector_dataspace
+dat 0, 0, 0, 0
+dat 0, 0, 0, 0
+dat 0, 0, 0, 0
+:ncc_dataspace
+dat 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 
+
+;these functions convert a word/words from register A (and B in the case of a dword), to an ASCII string starting at [C].
+;==============
+:angle_tostring ;returns a 7 char string witha sign "-" or " ", degrees "000", a space, and minutes "00".
 set push, ex
-;preparation 
-SET [B+4], A 
-SET [B+3], A 
-SET [B+2], A 
-SET [B+1], A 
-SET [B], A 
-;last digit 
-MOD [B+4], 10 
-;fourth digit 
-DIV [B+3], 10 
-MOD [B+3], 10 
-;third digit 
-DIV [B+2], 100 
-MOD [B+2], 10 
-;second digit 
-DIV [B+1], 1000 
-MOD [B+1], 10 
-;first digit 
-DIV [B], 10000 
-MOD [B], 10 
-;ASCII processer
-bor [B+4], 0xf030
-bor [B+3], 0xf030
-bor [B+2], 0xf030
-bor [B+1], 0xf030
-bor [B], 0xf030
+set push, i
+set push, j
+set i, a
+set j, a
+and j, 0b0000000000111111
+and i, 0b0111111111000000
+shr i, 6
+set [c+6], j
+set [c+5], j
+set [c+4], key_space
+set [c+3], i
+set [c+2], i
+set [c+1], i
+ifg a, 0x7fff
+set [c], [angle_tostring_const1]
+ifl a, 0x8000
+set [c], key_space
+
+and [c+6], 0x000f
+add [c+6], 0x0030
+ifg [c+6], 0x0039
+add [c+6], 8
+
+and [c+5], 0x00f0
+shr [c+5], 4
+add [c+5], 0x0030
+ifg [c+5], 0x0039
+add [c+5], 8
+
+and [c+3], 0x000f
+add [c+3], 0x0030
+ifg [c+3], 0x0039
+add [c+3], 8
+
+and [c+2], 0x00f0
+shr [c+2], 4
+add [c+2], 0x0030
+ifg [c+2], 0x0039
+add [c+2], 8
+
+and [c+1], 0x0f00
+shr [c+1], 8
+add [c+1], 0x0030
+ifg [c+1], 0x0039
+add [c+1], 8
+
+set i, pop
+set j, pop
+set ex, pop
+set pc, pop
+:angle_tostring_const1 dat "-"
+
+:word_tostring ;returns a 4 char hexadecimal string format: "0000"
+set push, ex
+set [c], a
+and [c], 0x0f00
+shr [c], 12
+add [c], 0x0030
+ifg [c], 0x0039
+add [c], 8
+
+set [c+1], a
+and [c+1], 0x0f00
+shr [c+1], 8
+add [c+1], 0x0030
+ifg [c+1], 0x0039
+add [c+1], 8
+
+set [c+2], a
+and [c+2], 0x00f0
+shr [c+2], 4
+add [c+2], 0x0030
+ifg [c+2], 0x0039
+add [c+2], 8
+
+set [c+3], a
+and [c+3], 0x000f
+add [c+3], 0x0030
+ifg [c+3], 0x0039
+add [c+3], 8
+
 set ex, pop
 set pc, pop
 
-:convert_from_hex_32
-set push, ex
-
-set ex, pop
+:dword_tostring ;returns an 8 char hexadecimal string format: "00000000"
+set push, a
+set push, c
+jsr word_tostring
+set a, b
+add c, 4
+jsr word_tostring
+set c, pop
+set a, pop
 set pc, pop
+
+:float_tostring ;like a dword but the string is in scientific notation. and B is signed
+set push, a
+set push, c
+add c, 1
+jsr word_tostring
+sub c, 1
+set [c+4], [float_tostring_const]
+ifg b, 0x7fff
+set [c], [angle_tostring_const1]
+ifl b, 0x8000
+set [c], key_space
+set a, b
+and a, 0b0111111111111111
+add c, 6
+jsr word_tostring
+set c, pop
+set a, pop
+set pc, pop
+:float_tostring_const dat "^"
+;==============
 
 :VRAM
 dat "                                "
@@ -122,27 +249,27 @@ dat "            Page 1/5 >          "
 dat 0
 :screen_map2
 dat "======Orbital info screen======="
-dat "0000000000 :apoapsis (100m)     "
-dat "0000000000 :periapse (100m)     "
-dat "00000  :eccentricity  (1000ths) "
-dat "000-00 :inclination             "
-dat "000-00 :argument of periapse    "
-dat "                                "
-dat "                                "
-dat "                                "
-dat "                                "
-dat "                                "
+dat "00000000 :apoapsis (100m)       "
+dat "00000000 :periapse (100m)       "
+dat "0000   :eccentricity (1000ths)  "
+dat "-000 00  :inclination           "
+dat "-000 00  :argument of periapse  "
+dat "======Gravity field data========"
+dat "Gravitational Parameter (kg):   "
+dat "-0000^0000                      "
+dat "-000 00 :directional pitch      "
+dat "-000 00 :directional yaw        "
 dat "          < Page 2/5 >          "
 dat 0
 :screen_map3
 dat "=========Orbital times=========="
-dat "0000000000 :sec. till apoapsis  "
-dat "0000000000 :sec. till periapse  "
-dat "0000000000 :sec. till asc. node "
-dat "0000000000 :sec. till des. node "
-dat "0000000000 :sec. Orbital Period "
-dat "0000000000 :m/s  Orbital Speed  "
-dat "0000000000 :m/s^2 Acceleration  "
+dat "00000000 :sec. till apoapsis    "
+dat "00000000 :sec. till periapse    "
+dat "00000000 :sec. till asc. node   "
+dat "00000000 :sec. till des. node   "
+dat "00000000 :sec. Orbital Period   "
+dat "00000000 :m/s  Orbital Speed    "
+dat "00000000 :m/s^2 Acceleration    "
 dat "                                "
 dat "                                "
 dat "                                "
@@ -162,14 +289,28 @@ dat "8:                              "
 dat "                                "
 dat "          < Page 4/5 >          "
 dat 0
+:screen_target_map
+dat "==========Target Data==========="
+dat "00000000 :rough mass (kg)       "
+dat "-0000^0000 :distance (m)        "
+dat "-000 00 :directional pitch      "
+dat "-000 00 :directional yaw        "
+dat "======relative orbit data======="
+dat "-000 00 :argument of periapse   "
+dat "-000 00 :relative inclination   "
+dat "00000000 :apoapsis (100m)       "
+dat "00000000 :periapse (100m)       "
+dat "                                "
+dat "          < Page 4/5 >          "
+dat 0
 :screen_map5
 dat "===========Credits=============="
 dat "     Created By Cryptix         "
 dat "     Founder and CEO of         "
 dat "     Ender Innovations          "
-dat "  Orlof - Megastage             "
-dat "  StillNoNumber - borrowed code "
-dat "  Herobrine - testing emulator  "
+dat "     Orlof - Megastage          "
+dat "                                "
+dat "                                "
 dat "                                "
 dat "                                "
 dat "                                "
