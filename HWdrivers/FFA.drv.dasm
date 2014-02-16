@@ -4,8 +4,8 @@
 ; *************************
 .define ffa_id_a 0xbc64
 .define ffa_id_b 0x3846
-:ffa dat 0
-:ffa_index dat 0
+:ffa dat 0xffff
+:ffa_index dat 0xffff
 
 :ffa_select
 set push, a

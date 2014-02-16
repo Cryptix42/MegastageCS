@@ -5,8 +5,8 @@
 ; *************************
 .define keyboard_id_a 0x7406
 .define keyboard_id_b 0x30cf
-:keyboard_index dat 0
-:keyboard dat 0
+:keyboard_index dat 0xffff
+:keyboard dat 0xffff
 
 :keyboard_select;Param A. "selects" a keyboard for the keyboard functions to interact with.
 set push, a

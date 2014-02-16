@@ -4,8 +4,8 @@
 ; *************************
 .define pps_id_a 0x0cb7
 .define pps_id_b 0xcb4c
-:pps dat 0
-:pps_index dat 0
+:pps dat 0xffff
+:pps_index dat 0xffff
 
 :pps_select
 set push, a

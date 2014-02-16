@@ -27,7 +27,7 @@ ife c, key_arrow_right
 jsr page_right
 ife c, key_arrow_left
 jsr page_left
-ife [page], 3
+ife [page], 4
 set pc, target_key_loop
 ife c, key_w
 jsr w_pitch
@@ -47,8 +47,6 @@ ife c, key_r
 jsr r_throttle
 ife c, key_f
 jsr f_throttle
-ife c, key_z
-jsr z_suicide
 set pc, key_control_loop
 :target_key_loop
 ife c, key_space
@@ -89,28 +87,6 @@ set pc, key_control_loop
 
 set pc, pop
 
-:z_suicide
-set push, a
-set push, b
-set a, [gyro_z_index]
-jsr xlcmg_select
-set [gyro_z_torque], 0x8000
-set b, [gyro_z_torque]
-jsr xlcmg_set_torque_level
-set a, [gyro_y_index]
-jsr xlcmg_select
-set [gyro_y_torque], 0x8000
-set b, [gyro_y_torque]
-jsr xlcmg_set_torque_level
-set a, [gyro_x_index]
-jsr xlcmg_select
-set [gyro_x_torque], 0x8000
-set b, [gyro_x_torque]
-jsr xlcmg_set_torque_level
-set b, pop
-set a, pop
-set pc, pop
-
 :page_right
 ifn [page], end_page
 add [page], 1
@@ -121,28 +97,6 @@ set pc, pop
 ifn [page], 0
 sub [page], 1
 jsr update_screen
-set pc, pop
-
-:x_kill_rot;depricated
-set push, a
-set push, b
-set a, [gyro_z_index]
-jsr xlcmg_select
-set [gyro_z_torque], 0
-set b, [gyro_z_torque]
-jsr xlcmg_set_torque_level
-set a, [gyro_y_index]
-jsr xlcmg_select
-set [gyro_y_torque], 0
-set b, [gyro_y_torque]
-jsr xlcmg_set_torque_level
-set a, [gyro_x_index]
-jsr xlcmg_select
-set [gyro_x_torque], 0
-set b, [gyro_x_torque]
-jsr xlcmg_set_torque_level
-set b, pop
-set a, pop
 set pc, pop
 
 :x_kill_throttle

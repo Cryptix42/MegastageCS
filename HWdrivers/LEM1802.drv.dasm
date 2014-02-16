@@ -5,8 +5,8 @@
 ; *************************
 .define lem1802_id_a 0xf615
 .define lem1802_id_b 0x7349
-:lem1802_index dat 0
-:lem1802 dat 0
+:lem1802_index dat 0xffff
+:lem1802 dat 0xffff
 
 :lem1802_select;Param A. "selects" a lem1802 for the lem1802 functions to interact with.
 set push, a

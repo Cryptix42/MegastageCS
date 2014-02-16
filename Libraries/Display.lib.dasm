@@ -6,16 +6,10 @@
 set push, a
 set push, b
 set push, c
-set c, a
-jsr lem1802_amount
-ifg c, a
-set pc, init_screen_end
-set a, c
 set c, 0
 jsr lem1802_select
 set b, VRAM
 jsr lem1802_map_VRAM
-:init_screen_end
 set c, pop
 set b, pop
 set a, pop
@@ -28,6 +22,7 @@ set push, c
 set push, i
 set a, VRAM
 set c, vram_size
+
 ife [page], 0
 set b, screen_map1
 ife [page], 1
@@ -38,13 +33,19 @@ ife [page], 3
 set b, screen_map4
 ife [page], 4
 set b, screen_map5
+ife [page], 5
+set b, screen_map6
 jsr memory_copy
-ife [page], 1
+
+ife [page], 1 ;this one makes weird halfscreen, blinking, nonsense text glitch
 jsr update_orbital_data
-ife [page], 2
+ife [page], 2 ;this one does something that crashes everything and makes the blackness
 jsr update_times_data
-ife [page], 3
+ife [page], 3 ;this one does that wall of nonsense at the end, and crashes
+jsr update_pps_page
+ife [page], 4 ;this isn't even coded yet
 jsr update_target_page
+
 set b, text_color
 jsr memory_bor
 set i, pop
@@ -57,10 +58,45 @@ set pc, pop
 set push, a
 set push, b
 set push, c
-set a, 1
+set a, 0
 jsr ffa_select
-jsr hta90_select
 jsr ncc_select
+;select SOI field here??? (in B)
+set c, vector_dump
+jsr ffa_orbital_state_vector
+set b, vector_dump
+set c, ncc_dump
+jsr ncc_get_orbital_elements
+set a, [ncc_dump]
+set b, [ncc_dump+1]
+set c, vram+32
+jsr dword_tostring
+set a, [ncc_dump+2]
+set b, [ncc_dump+3]
+set c, vram+64
+jsr dword_tostring
+set a, [ncc_dump+4]
+set c, vram+96
+jsr word_tostring
+set a, [ncc_dump+5]
+set c, vram+128
+jsr angle_tostring
+set a, [ncc_dump+6]
+set c, vram+160
+jsr angle_tostring
+;select SOI field here??? (in B)
+set c, ffa_dump
+jsr ffa_field_data
+set a, [ffa_dump]
+set b, [ffa_dump+1]
+set c, vram+256
+jsr float_tostring
+set a, [ffa_dump+2]
+set c, vram+288
+jsr angle_tostring
+set a, [ffa_dump+3]
+set c, vram+320
+jsr angle_tostring
 set c, pop
 set b, pop
 set a, pop
@@ -70,7 +106,43 @@ set pc, pop
 set push, a
 set push, b
 set push, c
-
+set a, 0
+jsr ffa_select
+jsr ncc_select
+;select SOI field here??? (in B)
+set c, vector_dump
+jsr ffa_orbital_state_vector
+set b, vector_dump
+set c, ncc_dump
+jsr ncc_get_times
+set a, [ncc_dump]
+set b, [ncc_dump+1]
+set c, vram+32
+jsr dword_tostring
+set a, [ncc_dump+2]
+set b, [ncc_dump+3]
+set c, vram+64
+jsr dword_tostring
+set a, [ncc_dump+4]
+set b, [ncc_dump+5]
+set c, vram+96
+jsr dword_tostring
+set a, [ncc_dump+6]
+set b, [ncc_dump+7]
+set c, vram+128
+jsr dword_tostring
+set a, [ncc_dump+8]
+set b, [ncc_dump+9]
+set c, vram+160
+jsr dword_tostring
+set a, [ncc_dump+10]
+set b, [ncc_dump+11]
+set c, vram+192
+jsr dword_tostring
+set a, [ncc_dump+12]
+set b, [ncc_dump+13]
+set c, vram+224
+jsr dword_tostring
 set c, pop
 set b, pop
 set a, pop
@@ -80,19 +152,53 @@ set pc, pop
 set push, a
 set push, b
 set push, c
+set a, 0
+jsr ncc_select
+jsr hta90_select
 
 set c, pop
 set b, pop
 set a, pop
 set pc, pop
 
-:vector_dataspace
-dat 0, 0, 0, 0
-dat 0, 0, 0, 0
-dat 0, 0, 0, 0
-:ncc_dataspace
-dat 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 
+:update_pps_page
+set push, a
+set push, b
+set push, c
+set a, 0
+jsr pps_select
+set b, 0x8002
+jsr pps_get_sector
+set a, b
+set c, vram+32
+jsr word_tostring
+set b, ncc_dump
+jsr pps_get_coords
+set a, [ncc_dump]
+set b, [ncc_dump+1]
+set c, vram+192
+jsr dword_tostring
+set a, [ncc_dump+2]
+set b, [ncc_dump+3]
+set c, vram+224
+jsr dword_tostring
+set a, [ncc_dump+4]
+set b, [ncc_dump+5]
+set c, vram+256
+jsr dword_tostring
+set c, pop
+set b, pop
+set a, pop
+set pc, pop
 
+:vector_dump
+dat 0, 0, 0, 0
+dat 0, 0, 0, 0
+dat 0, 0, 0, 0
+:ncc_dump
+dat 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 
+:ffa_dump
+dat 0, 0, 0, 0, 0, 0
 ;these functions convert a word/words from register A (and B in the case of a dword), to an ASCII string starting at [C].
 ;==============
 :angle_tostring ;returns a 7 char string witha sign "-" or " ", degrees "000", a space, and minutes "00".
@@ -118,30 +224,30 @@ set [c], key_space
 and [c+6], 0x000f
 add [c+6], 0x0030
 ifg [c+6], 0x0039
-add [c+6], 8
+add [c+6], 7
 
 and [c+5], 0x00f0
 shr [c+5], 4
 add [c+5], 0x0030
 ifg [c+5], 0x0039
-add [c+5], 8
+add [c+5], 7
 
 and [c+3], 0x000f
 add [c+3], 0x0030
 ifg [c+3], 0x0039
-add [c+3], 8
+add [c+3], 7
 
 and [c+2], 0x00f0
 shr [c+2], 4
 add [c+2], 0x0030
 ifg [c+2], 0x0039
-add [c+2], 8
+add [c+2], 7
 
 and [c+1], 0x0f00
 shr [c+1], 8
 add [c+1], 0x0030
 ifg [c+1], 0x0039
-add [c+1], 8
+add [c+1], 7
 
 set i, pop
 set j, pop
@@ -152,31 +258,31 @@ set pc, pop
 :word_tostring ;returns a 4 char hexadecimal string format: "0000"
 set push, ex
 set [c], a
-and [c], 0x0f00
+and [c], 0xf000
 shr [c], 12
 add [c], 0x0030
 ifg [c], 0x0039
-add [c], 8
+add [c], 7
 
 set [c+1], a
 and [c+1], 0x0f00
 shr [c+1], 8
 add [c+1], 0x0030
 ifg [c+1], 0x0039
-add [c+1], 8
+add [c+1], 7
 
 set [c+2], a
 and [c+2], 0x00f0
 shr [c+2], 4
 add [c+2], 0x0030
 ifg [c+2], 0x0039
-add [c+2], 8
+add [c+2], 7
 
 set [c+3], a
 and [c+3], 0x000f
 add [c+3], 0x0030
 ifg [c+3], 0x0039
-add [c+3], 8
+add [c+3], 7
 
 set ex, pop
 set pc, pop
@@ -195,10 +301,10 @@ set pc, pop
 :float_tostring ;like a dword but the string is in scientific notation. and B is signed
 set push, a
 set push, c
+set push, b
 add c, 1
 jsr word_tostring
 sub c, 1
-set [c+4], [float_tostring_const]
 ifg b, 0x7fff
 set [c], [angle_tostring_const1]
 ifl b, 0x8000
@@ -207,6 +313,7 @@ set a, b
 and a, 0b0111111111111111
 add c, 6
 jsr word_tostring
+set b, pop
 set c, pop
 set a, pop
 set pc, pop
@@ -226,15 +333,15 @@ dat "                                "
 dat "                                "
 dat "                                "
 dat "                                "
-dat 0
+dat 0, 0, 0
 
 .define vram_size 384
 .define text_color 0xf000
-.define end_page 4
+.define end_page 5
 :page dat 0
 
 :screen_map1
-dat "==== MegastageCS v0.1 Indev ===="
+dat "==== MegastageCS v0.2 Indev ===="
 dat "        Ship Controls:          "
 dat "      F & R - Throttle          "
 dat "      W & A - Pitch             "
@@ -243,9 +350,9 @@ dat "      Q & E - Roll              "
 dat "      < & > - Page              "
 dat "      Space - Update data       "
 dat "          X - Cut all throttle  "
-dat "          Z - >:) (temporary)   "
 dat "                                "
-dat "            Page 1/5 >          "
+dat "                                "
+dat "            Page 1/6 >          "
 dat 0
 :screen_map2
 dat "======Orbital info screen======="
@@ -259,7 +366,7 @@ dat "Gravitational Parameter (kg):   "
 dat "-0000^0000                      "
 dat "-000 00 :directional pitch      "
 dat "-000 00 :directional yaw        "
-dat "          < Page 2/5 >          "
+dat "          < Page 2/6 >          "
 dat 0
 :screen_map3
 dat "=========Orbital times=========="
@@ -273,9 +380,23 @@ dat "00000000 :m/s^2 Acceleration    "
 dat "                                "
 dat "                                "
 dat "                                "
-dat "          < Page 3/5 >          "
+dat "          < Page 3/6 >          "
 dat 0
 :screen_map4
+dat "=========PPS nav screen========="
+dat "0000 :sector number             "
+dat "(8000=unknown sector,           "
+dat " 8001=no pulsars detected,      "
+dat " 8002=malfunction)              "
+dat "                                "
+dat "00000000 :X coordinate          "
+dat "00000000 :Y coordinate          "
+dat "00000000 :Z coordinate          "
+dat "                                "
+dat "                                "
+dat "          < Page 4/6 >          "
+dat 0
+:screen_map5
 dat "=========Targeting Menu========="
 dat "   selection key: object type   "
 dat "1:             9:               "
@@ -287,7 +408,21 @@ dat "6:             E:               "
 dat "7:             F:               "
 dat "8:                              "
 dat "                                "
-dat "          < Page 4/5 >          "
+dat "          < Page 5/6 >          "
+dat 0
+:screen_map6
+dat "===========Credits=============="
+dat "     Created By Cryptix         "
+dat "     Founder and CEO of         "
+dat "     Ender Innovations          "
+dat "     Orlof - Megastage          "
+dat "                                "
+dat "                                "
+dat "                                "
+dat "                                "
+dat "                                "
+dat "                                "
+dat "          < Page 6/6            "
 dat 0
 :screen_target_map
 dat "==========Target Data==========="
@@ -301,20 +436,6 @@ dat "-000 00 :relative inclination   "
 dat "00000000 :apoapsis (100m)       "
 dat "00000000 :periapse (100m)       "
 dat "                                "
-dat "          < Page 4/5 >          "
-dat 0
-:screen_map5
-dat "===========Credits=============="
-dat "     Created By Cryptix         "
-dat "     Founder and CEO of         "
-dat "     Ender Innovations          "
-dat "     Orlof - Megastage          "
 dat "                                "
-dat "                                "
-dat "                                "
-dat "                                "
-dat "                                "
-dat "                                "
-dat "          < Page 5/5            "
 dat 0
 :screen_maps_end dat 0

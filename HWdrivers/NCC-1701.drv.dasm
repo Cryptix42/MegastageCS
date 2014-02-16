@@ -4,8 +4,8 @@
 ; *************************
 .define ncc_id_a 0x5ae1
 .define ncc_id_b 0x89fe
-:ncc dat 0
-:ncc_index dat 0
+:ncc dat 0xffff
+:ncc_index dat 0xffff
 
 :ncc_select
 set push, a
