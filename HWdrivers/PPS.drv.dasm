@@ -2,8 +2,8 @@
 ; Project: MegastageCS
 ; File: PPS.drv.dasm
 ; *************************
-.define pps_id_a 0x0cb7
-.define pps_id_b 0xcb4c
+.define pps_id_a 0x42c2
+.define pps_id_b 0x3c77
 :pps dat 0xffff
 :pps_index dat 0xffff
 

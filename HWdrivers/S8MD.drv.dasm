@@ -4,8 +4,8 @@
 ; *************************
 .define s8md_id_a 0x6730
 .define s8md_id_b 0xa8fb
-:s8md dat 0
-:s8md_index dat 0
+:s8md dat 0xffff
+:s8md_index dat 0xffff
 
 :s8md_select
 set push, a

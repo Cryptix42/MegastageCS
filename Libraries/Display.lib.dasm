@@ -61,7 +61,7 @@ set push, c
 set a, 0
 jsr ffa_select
 jsr ncc_select
-;select SOI field here??? (in B)
+jsr ffa_get_soi
 set c, vector_dump
 jsr ffa_orbital_state_vector
 set b, vector_dump
@@ -84,7 +84,7 @@ jsr angle_tostring
 set a, [ncc_dump+6]
 set c, vram+160
 jsr angle_tostring
-;select SOI field here??? (in B)
+jsr ffa_get_soi
 set c, ffa_dump
 jsr ffa_field_data
 set a, [ffa_dump]
@@ -109,7 +109,7 @@ set push, c
 set a, 0
 jsr ffa_select
 jsr ncc_select
-;select SOI field here??? (in B)
+jsr ffa_get_soi
 set c, vector_dump
 jsr ffa_orbital_state_vector
 set b, vector_dump
@@ -167,7 +167,7 @@ set push, b
 set push, c
 set a, 0
 jsr pps_select
-set b, 0x8002
+set b, 0xffff
 jsr pps_get_sector
 set a, b
 set c, vram+32
@@ -196,9 +196,9 @@ dat 0, 0, 0, 0
 dat 0, 0, 0, 0
 dat 0, 0, 0, 0
 :ncc_dump
-dat 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 
+dat 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff 
 :ffa_dump
-dat 0, 0, 0, 0, 0, 0
+dat 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff
 ;these functions convert a word/words from register A (and B in the case of a dword), to an ASCII string starting at [C].
 ;==============
 :angle_tostring ;returns a 7 char string witha sign "-" or " ", degrees "000", a space, and minutes "00".

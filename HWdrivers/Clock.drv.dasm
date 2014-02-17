@@ -4,8 +4,8 @@
 ; *************************
 .define clock_id_a 0xb402
 .define clock_id_b 0x12d0
-:clock_index dat 0
-:clock dat 0
+:clock_index dat 0xffff
+:clock dat 0xffff
 
 :clock_select;Param A. "selects" a clock for the clock functions to interact with.
 set push, a

@@ -4,8 +4,8 @@
 ; *************************
 .define m35fd_id_a 0x24c5
 .define m35fd_id_b 0x4fd5
-:m35fd_index dat 0
-:m35fd dat 0
+:m35fd_index dat 0xffff
+:m35fd dat 0xffff
 :m35fd_error_flag dat 0
 
 :m35fd_select;Param A. "selects" a m35fd for the m35fd functions to interact with.

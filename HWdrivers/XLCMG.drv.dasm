@@ -4,8 +4,8 @@
 ; *************************
 .define xlcmg_id_a 0xc4de
 .define xlcmg_id_b 0xeec6
-:xlcmg dat 0
-:xlcmg_index dat 0
+:xlcmg dat 0xffff
+:xlcmg_index dat 0xffff
 
 :xlcmg_select
 set push, a

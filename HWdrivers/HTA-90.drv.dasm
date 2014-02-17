@@ -4,8 +4,8 @@
 ; *************************
 .define hta90_id_a 0x980f
 .define hta90_id_b 0x3442
-:hta90 dat 0
-:hta90_index dat 0
+:hta90 dat 0xffff
+:hta90_index dat 0xffff
 
 :hta90_select
 set push, a

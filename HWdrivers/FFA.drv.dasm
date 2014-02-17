@@ -82,16 +82,30 @@ set c, pop
 set b, pop
 set pc, pop
 
-:ffa_orbital_state_vector
+:ffa_get_fields
 set push, a
 set a, 0
 hwi [ffa]
 set a, pop
 set pc, pop
 
-:ffa_field_data
+:ffa_orbital_state_vector
 set push, a
 set a, 1
+hwi [ffa]
+set a, pop
+set pc, pop
+
+:ffa_field_data
+set push, a
+set a, 2
+hwi [ffa]
+set a, pop
+set pc, pop
+
+:ffa_get_soi
+set push, a
+set a, 3
 hwi [ffa]
 set a, pop
 set pc, pop
