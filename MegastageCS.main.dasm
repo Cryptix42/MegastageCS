@@ -87,11 +87,16 @@ jsr target_selection
 set pc, key_control_loop
 
 :target_selection
+set push, b
 ifg c, 0x0039
 sub c, 7
 and c, 0x000f
-set [target_index], c
+set b, hta_signature_dump
+jsr hta90_get_signatures
+set b, [hta_signature_dump+c]
+set [target], b
 set c, 0
+set b, pop
 set pc, pop
 
 :page_right
