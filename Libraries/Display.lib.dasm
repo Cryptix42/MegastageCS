@@ -197,7 +197,53 @@ set a, 0
 jsr ncc_select
 jsr hta90_select
 jsr ffa_select
-
+jsr ffa_get_soi
+set c, vector_dump
+jsr ffa_orbital_state_vector
+set b, hta_signature_dump
+jsr hta90_get_signatures
+set b, [hta_signature_dump+target_index]
+set push, c
+jsr hta90_set_target
+set c, pop
+set b, hta_vector_dump
+set push, c
+jsr hta90_get_vector
+set c, pop
+set b, vector_dump
+jsr ncc_compare_orbits
+set c, VRAM+224
+jsr angle_tostring
+set a, b
+set c, VRAM+192
+jsr angle_tostring
+set b, vector_dump
+set c, ncc_dump
+jsr ncc_get_orbital_elements
+set a, [ncc_dump]
+set b, [ncc_dump+1]
+set c, VRAM+256
+jsr dword_tostring
+set a, [ncc_dump+2]
+set b, [ncc_dump+3]
+set c, VRAM+288
+jsr dword_tostring
+set b, hta_data_dump
+jsr hta90_get_target_data
+set a, [hta_data_dump+1]
+set b, [hta_data_dump+2]
+set c, VRAM+32
+jsr dword_tostring
+set a, [hta_data_dump+3]
+set b, [hta_data_dump+4]
+add c, 32
+jsr float_tostring
+set a, [hta_data_dump+5]
+add c, 32
+jsr angle_tostring
+set a, [hta_data_dump+6]
+add c, 32
+jsr angle_tostring
 set c, pop
 set b, pop
 set a, pop
@@ -359,6 +405,10 @@ set pc, pop
 dat 0, 0, 0, 0
 dat 0, 0, 0, 0
 dat 0, 0, 0, 0
+:hta_vector_dump
+dat 0, 0, 0, 0
+dat 0, 0, 0, 0
+dat 0, 0, 0, 0
 :ncc_dump
 dat 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff 
 :ffa_dump
@@ -369,10 +419,6 @@ dat 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff
 dat 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff
 :hta_data_dump
 dat 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff
-:hta_vector_dump
-dat 0, 0, 0, 0
-dat 0, 0, 0, 0
-dat 0, 0, 0, 0
 :angle_tostring_const1 dat "-"
 :target_index dat 0
 :page dat 0
@@ -394,7 +440,7 @@ dat "                                "
 dat 0
 
 :screen_map1
-dat "==== MegastageCS v0.2 Indev ===="
+dat "==== MegastageCS v0.3 Indev ===="
 dat "        Ship Controls:          "
 dat "      F & R - Throttle          "
 dat "      W & A - Pitch             "
@@ -452,6 +498,7 @@ dat 0
 :screen_map5
 dat "=========Targeting Menu========="
 dat "   selection key: object type   "
+dat "0:             8:               "
 dat "1:             9:               "
 dat "2:             A:               "
 dat "3:             B:               "
@@ -459,8 +506,7 @@ dat "4:             C:               "
 dat "5:             D:               "
 dat "6:             E:               "
 dat "7:             F:               "
-dat "8:           0=unknown 1=natural"
-dat "             2=manmade          "
+dat " 0=unknown 1=natural 2=manmade  "
 dat "          < Page 5/7 >          "
 dat 0
 :screen_map6

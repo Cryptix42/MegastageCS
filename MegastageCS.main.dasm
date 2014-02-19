@@ -87,7 +87,11 @@ jsr target_selection
 set pc, key_control_loop
 
 :target_selection
-
+ifg c, 0x0039
+sub c, 7
+and c, 0x000f
+set [target_index], c
+set c, 0
 set pc, pop
 
 :page_right
