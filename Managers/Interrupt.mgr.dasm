@@ -38,6 +38,8 @@ set pc, pop
 
 :clock_manager
 set [clock_tick_source], b
+ife b, 0
+jsr update_screen
 set pc, pop
 
 :keyboard_manager

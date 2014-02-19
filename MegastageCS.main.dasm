@@ -17,16 +17,21 @@ jsr xlcmg_assigner
 jsr s8md_assigner
 jsr update_screen
 jsr keyboard_select
+jsr clock_select
+set b, 60
+jsr clock_tick_set
+set a, 1
+jsr clock_int_set
 :key_control_loop
 jsr keyboard_read_buffer
 ife c, 0
 set pc, key_control_loop
-ife c, key_space
-jsr update_screen
 ife c, key_arrow_right
 jsr page_right
 ife c, key_arrow_left
 jsr page_left
+ife c, key_space;depricate this at next update
+jsr update_screen
 ife [page], 4
 set pc, target_key_loop
 ife c, key_w
@@ -49,8 +54,6 @@ ife c, key_f
 jsr f_throttle
 set pc, key_control_loop
 :target_key_loop
-ife c, key_space
-jsr update_screen
 ife c, key_1
 jsr target_selection
 ife c, key_2
