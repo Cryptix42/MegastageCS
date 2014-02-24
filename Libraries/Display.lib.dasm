@@ -148,43 +148,6 @@ set b, pop
 set a, pop
 set pc, pop
 
-:update_target_page
-set push, a
-set push, b
-set push, c
-set a, 0
-jsr ncc_select
-jsr hta90_select
-set b, hta_signature_dump
-jsr hta90_get_signatures
-set i, 0xffff
-set c, VRAM+34
-:update_target_page_loop
-add i, 1
-add c, 32
-ife i, 8
-set c, VRAM+81
-ife [hta_signature_dump+i], 0
-set pc, update_target_page_brk
-ife i, 15
-set pc, update_target_page_brk
-set b, [hta_signature_dump+i]
-set push, c
-jsr hta90_set_target
-set c, pop
-set b, hta_data_dump
-set push, c
-jsr hta90_get_target_data
-set c, pop
-set a, [hta_data_dump]
-jsr word_tostring
-set pc, update_target_page_loop
-:update_target_page_brk
-set c, pop
-set b, pop
-set a, pop
-set pc, pop
-
 :update_target_data
 set push, a
 set push, b
@@ -193,6 +156,12 @@ set a, 0
 jsr ncc_select
 jsr hta90_select
 jsr ffa_select
+
+set c, [target_index]
+set b, hta_signature_dump
+jsr hta90_get_signatures
+set b, [hta_signature_dump+c]
+set [target], b
 
 set c, VRAM+12
 set a, [target_index]

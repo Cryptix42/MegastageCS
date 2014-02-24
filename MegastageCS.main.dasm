@@ -32,8 +32,6 @@ ife c, key_arrow_left
 jsr page_left
 ife c, key_space;depricate this at next update
 jsr update_screen
-ife [page], 4
-set pc, target_key_loop
 ife c, key_w
 jsr w_pitch
 ife c, key_s
@@ -52,6 +50,8 @@ ife c, key_r
 jsr r_throttle
 ife c, key_f
 jsr f_throttle
+ife [page], 4
+set pc, target_key_loop
 set pc, key_control_loop
 :target_key_loop
 ife c, key_arrow_up
@@ -85,11 +85,6 @@ set a, 0
 jsr hta90_select
 sub [target_index], 1
 and [target_index], 0x000f
-set c, [target_index]
-set b, hta_signature_dump
-jsr hta90_get_signatures
-set b, [hta_signature_dump+c]
-set [target], b
 jsr update_screen
 set c, pop
 set b, pop
