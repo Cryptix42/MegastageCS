@@ -54,49 +54,46 @@ ife c, key_f
 jsr f_throttle
 set pc, key_control_loop
 :target_key_loop
-ife c, key_1
-jsr target_selection
-ife c, key_2
-jsr target_selection
-ife c, key_3
-jsr target_selection
-ife c, key_4
-jsr target_selection
-ife c, key_5
-jsr target_selection
-ife c, key_6
-jsr target_selection
-ife c, key_7
-jsr target_selection
-ife c, key_8
-jsr target_selection
-ife c, key_9
-jsr target_selection
-ife c, key_a
-jsr target_selection
-ife c, key_b
-jsr target_selection
-ife c, key_c
-jsr target_selection
-ife c, key_d
-jsr target_selection
-ife c, key_e
-jsr target_selection
-ife c, key_f
-jsr target_selection
+ife c, key_arrow_up
+jsr target_selection_up
+ife c, key_arrow_down
+jsr target_selection_down
 set pc, key_control_loop
 
-:target_selection
+:target_selection_up
 set push, b
-ifg c, 0x0039
-sub c, 7
-and c, 0x000f
+set push, c
+set a, 0
+jsr hta90_select
+add [target_index], 1
+and [target_index], 0x000f
+set c, [target_index]
 set b, hta_signature_dump
 jsr hta90_get_signatures
 set b, [hta_signature_dump+c]
 set [target], b
-set c, 0
+jsr update_screen
+set c, pop
 set b, pop
+set pc, pop
+
+:target_selection_down
+set push, a
+set push, b
+set push, c
+set a, 0
+jsr hta90_select
+sub [target_index], 1
+and [target_index], 0x000f
+set c, [target_index]
+set b, hta_signature_dump
+jsr hta90_get_signatures
+set b, [hta_signature_dump+c]
+set [target], b
+jsr update_screen
+set c, pop
+set b, pop
+set a, pop
 set pc, pop
 
 :page_right
@@ -254,3 +251,35 @@ set pc, end
 .include Managers\Interrupt.mgr.dasm
 .include Data\CONST.dat.dasm
 .include Data\ALLOC.dat.dasm
+
+;code junkyard
+;ife c, key_1
+;jsr target_selection
+;ife c, key_2
+;jsr target_selection
+;ife c, key_3
+;jsr target_selection
+;ife c, key_4
+;jsr target_selection
+;ife c, key_5
+;jsr target_selection
+;ife c, key_6
+;jsr target_selection
+;ife c, key_7
+;jsr target_selection
+;ife c, key_8
+;jsr target_selection
+;ife c, key_9
+;jsr target_selection
+;ife c, key_a
+;jsr target_selection
+;ife c, key_b
+;jsr target_selection
+;ife c, key_c
+;jsr target_selection
+;ife c, key_d
+;jsr target_selection
+;ife c, key_e
+;jsr target_selection
+;ife c, key_f
+;jsr target_selection

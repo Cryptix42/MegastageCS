@@ -114,6 +114,14 @@ ife b, 0b0000000000001001
 set [s8md_forward_index], a
 ife b, 0b0000000000000001
 set [s8md_reverse_index], a
+ife b, 0b0000100100000000
+set [s8md_right_index], a
+ife b, 0b0000000100000000
+set [s8md_left_index], a
+ife b, 0b0000000010010000
+set [s8md_down_index], a
+ife b, 0b0000000000010000
+set [s8md_up_index], a
 ifn a, c
 set pc, s8md_assgn_loop
 :s8md_assgn_loop_brk
@@ -124,6 +132,19 @@ set a, pop
 set pc, pop
 
 :s8md_forward_index dat 0
-:s8md_reverse_index dat 0
 :s8md_forward_power dat 0
+
+:s8md_reverse_index dat 0
 :s8md_reverse_power dat 0
+
+:s8md_left_index dat 0
+:s8md_left_power dat 0
+
+:s8md_right_index dat 0
+:s8md_right_power dat 0
+
+:s8md_up_index dat 0
+:s8md_up_power dat 0
+
+:s8md_down_index dat 0
+:s8md_down_power dat 0
