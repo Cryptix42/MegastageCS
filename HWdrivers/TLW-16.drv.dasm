@@ -1,0 +1,108 @@
+; *************************
+; Project: MegastageCS
+; File: TLW-16.drv.dasm
+; *************************
+.define tlw16_id_a 0x0000
+.define tlw16_id_b 0xeefa
+:tlw16 dat 0xffff
+:tlw16_index dat 0xffff
+
+:tlw16_select
+set push, a
+set push, b
+set push, c
+set push, i
+set push, j
+set push, x
+set push, y
+set push, z
+set push, ex
+set [tlw16_index], a
+hwn i
+sub i, 1
+set j, 0xffff
+set z, a
+:tlw16_search_loop
+add j, 1
+hwq j
+ife a, tlw16_id_a
+ife b, tlw16_id_b
+sub z, 1
+ife j, i
+ifn z, 0xffff
+jsr error_no_such_device
+ife j, i
+ifn z, 0xffff
+set pc, tlw16_search_loop_brk
+ife z, 0xffff
+set [tlw16], j
+ifn z, 0xffff
+set pc, tlw16_search_loop
+:tlw16_search_loop_brk
+set ex, pop
+set z, pop
+set y, pop
+set x, pop
+set j, pop
+set i, pop
+set c, pop
+set b, pop
+set a, pop
+set pc, pop
+
+:tlw16_amount
+set push, b
+set push, c
+set push, i
+set push, j
+set push, x
+set push, y
+set push, z
+set push, ex
+hwn i
+sub i, 1
+set j, 0xffff
+set z, 0
+:tlw16_search_loop2
+add j, 1
+hwq j
+ife a, tlw16_id_a
+ife b, tlw16_id_b
+add z, 1
+ifn j, i
+set pc, tlw16_search_loop2
+set a, z
+set ex, pop
+set z, pop
+set y, pop
+set x, pop
+set j, pop
+set i, pop
+set c, pop
+set b, pop
+set pc, pop
+
+:tlw16_get_status
+set push, a
+set a, 0
+hwi [tlw16]
+set a, pop
+set pc, pop
+
+:tlw16_set_wattage
+set push, a
+set a, 1
+ifg b, 5000
+set b, 5000
+hwi [tlw16]
+set a, pop
+set pc, pop
+
+:tlw16_fire
+set push, a
+set a, 2
+ifg b, 300
+set b, 300
+hwi [tlw16]
+set a, pop
+set pc, pop

@@ -1,0 +1,611 @@
+; *************************
+; Project: MegastageCS
+; File: Display.mgr.dasm
+; *************************
+:init_screen ;param: A. sets up an lem1802 with the lem1802 index A.
+set push, a
+set push, b
+set push, c
+set c, 0
+jsr lem1802_select
+set b, VRAM
+jsr lem1802_map_VRAM
+set c, pop
+set b, pop
+set a, pop
+set pc, pop
+
+:update_screen
+set push, a
+set push, b
+set push, c
+set push, i
+set a, VRAM
+set c, vram_size
+
+ife [page], 5
+jsr update_keybind_data
+ife [page], 0
+set b, screen_map1
+ife [page], 1
+set b, screen_map2
+ife [page], 2
+set b, screen_map3
+ife [page], 3
+set b, screen_map4
+ife [page], 4
+set b, screen_map5
+ifn [page], 5
+jsr memory_copy
+
+ife [page], 1
+jsr update_orbital_data
+ife [page], 2 
+jsr update_times_data
+ife [page], 3 
+jsr update_pps_data
+ife [page], 4 
+jsr update_target_data
+
+set b, text_color
+jsr memory_bor
+set i, pop
+set c, pop
+set b, pop
+set a, pop
+set pc, pop
+
+:update_keybind_data
+set push, c
+set push, i
+set push, j
+set b, [keybind_scroll]
+mul b, 32
+add b, screen_map6
+jsr memory_copy
+set c, screen_map6
+set i, 0xffff
+set j, keybind_selection_end
+add j, 1
+mul j, 32
+add j, screen_map6
+:update_keybind_data_loop
+add c, 32
+add i, 1
+set [c], [keybindings+i]
+ifn c, j
+set pc, update_keybind_data_loop
+set j, pop
+set i, pop
+set c, pop
+set pc, pop
+
+:update_orbital_data
+set push, a
+set push, b
+set push, c
+set a, 0
+jsr ffa_select
+jsr ncc_select
+jsr ffa_get_soi
+set c, vector_dump
+jsr ffa_orbital_state_vector
+set b, vector_dump
+set c, ncc_dump
+jsr ncc_get_orbital_elements
+set a, [ncc_dump]
+set b, [ncc_dump+1]
+set c, vram+32
+jsr dword_tostring
+set a, [ncc_dump+2]
+set b, [ncc_dump+3]
+set c, vram+64
+jsr dword_tostring
+set a, [ncc_dump+4]
+set c, vram+96
+jsr word_tostring
+set a, [ncc_dump+5]
+set c, vram+128
+jsr angle_tostring
+set a, [ncc_dump+6]
+set c, vram+160
+jsr angle_tostring
+jsr ffa_get_soi
+set c, ffa_dump
+jsr ffa_field_data
+set a, [ffa_dump]
+set b, [ffa_dump+1]
+set c, vram+256
+jsr float_tostring
+set a, [ffa_dump+2]
+set c, vram+288
+jsr angle_tostring
+set a, [ffa_dump+3]
+set c, vram+320
+jsr angle_tostring
+set c, pop
+set b, pop
+set a, pop
+set pc, pop
+
+:update_times_data
+set push, a
+set push, b
+set push, c
+set a, 0
+jsr ffa_select
+jsr ncc_select
+jsr ffa_get_soi
+set c, vector_dump
+jsr ffa_orbital_state_vector
+set b, vector_dump
+set c, ncc_dump
+jsr ncc_get_times
+set a, [ncc_dump]
+set b, [ncc_dump+1]
+set c, vram+32
+jsr dword_tostring
+set a, [ncc_dump+2]
+set b, [ncc_dump+3]
+set c, vram+64
+jsr dword_tostring
+set a, [ncc_dump+4]
+set b, [ncc_dump+5]
+set c, vram+96
+jsr dword_tostring
+set a, [ncc_dump+6]
+set b, [ncc_dump+7]
+set c, vram+128
+jsr dword_tostring
+set a, [ncc_dump+8]
+set b, [ncc_dump+9]
+set c, vram+160
+jsr dword_tostring
+set a, [ncc_dump+10]
+set b, [ncc_dump+11]
+set c, vram+192
+jsr dword_tostring
+set a, [ncc_dump+12]
+set b, [ncc_dump+13]
+set c, vram+224
+jsr dword_tostring
+set c, pop
+set b, pop
+set a, pop
+set pc, pop
+
+:update_target_data
+set push, a
+set push, b
+set push, c
+set a, 0
+jsr ncc_select
+jsr hta90_select
+jsr ffa_select
+
+set c, [target_index]
+set b, hta_signature_dump
+jsr hta90_get_signatures
+set b, [hta_signature_dump+c]
+set [target], b
+
+set c, VRAM+12
+set a, [target_index]
+jsr word_tostring
+
+jsr ffa_get_soi
+set c, vector_dump
+jsr ffa_orbital_state_vector
+
+set push, c
+set c, 0
+set b, [target]
+jsr hta90_set_target
+ife c, 0
+set pc, update_target_data_skp
+set c, pop
+
+set push, c
+set b, hta_vector_dump
+jsr hta90_get_vector
+set c, pop
+
+set push, c
+set b, hta_data_dump
+jsr hta90_get_target_data
+set c, pop
+
+set b, vector_dump
+jsr ncc_compare_orbits
+set c, VRAM+192
+jsr angle_tostring
+set a, b
+set c, VRAM+160
+jsr angle_tostring
+
+set b, vector_dump
+set c, ncc_dump
+jsr ncc_get_orbital_elements
+set a, [ncc_dump]
+set b, [ncc_dump+1]
+set c, VRAM+224
+jsr dword_tostring
+set a, [ncc_dump+2]
+set b, [ncc_dump+3]
+set c, VRAM+256
+jsr dword_tostring
+
+set a, [hta_data_dump]
+set c, VRAM+288
+jsr word_tostring
+set a, [hta_data_dump+1]
+set b, [hta_data_dump+2]
+set c, VRAM+32
+jsr dword_tostring
+set a, [hta_data_dump+3]
+set b, [hta_data_dump+4]
+add c, 32
+jsr dword_tostring
+set a, [hta_data_dump+5]
+add c, 32
+jsr angle_tostring
+set a, [hta_data_dump+6]
+add c, 32
+jsr angle_tostring
+
+set c, pop
+set b, pop
+set a, pop
+set pc, pop
+:update_target_data_skp
+set c, VRAM+32
+set b, 0xffff
+set a, 0xffff
+jsr dword_tostring
+add c, 32
+jsr dword_tostring
+add c, 32
+jsr angle_tostring
+add c, 32
+jsr angle_tostring
+add c, 32
+jsr angle_tostring
+add c, 32
+jsr angle_tostring
+add c, 32
+jsr dword_tostring
+add c, 32
+jsr dword_tostring
+add c, 32
+jsr word_tostring
+set c, pop
+set c, pop
+set b, pop
+set a, pop
+set pc, pop
+
+:update_pps_data
+set push, a
+set push, b
+set push, c
+set a, 0
+jsr pps_select
+set b, 0xffff
+jsr pps_get_sector
+set a, b
+set c, vram+32
+jsr word_tostring
+set b, pps_dump
+jsr pps_get_coords
+set a, [pps_dump]
+set b, [pps_dump+1]
+add c, 64
+jsr dword_tostring
+set a, [pps_dump+2]
+set b, [pps_dump+3]
+add c, 32
+jsr dword_tostring
+set a, [pps_dump+4]
+set b, [pps_dump+5]
+add c, 32
+jsr dword_tostring
+set c, pop
+set b, pop
+set a, pop
+set pc, pop
+
+;these functions convert a word/words from register A (and B in the case of a dword), to an ASCII string starting at C.
+;==============
+:angle_tostring ;returns a 7 char string witha sign "-" or " ", degrees "000", a space, and minutes "00".
+set push, ex
+set push, i
+set push, j
+set i, a
+set j, a
+and j, 0b0000000000111111
+and i, 0b0111111111000000
+shr i, 6
+set [c+6], j
+set [c+5], j
+set [c+4], key_space
+set [c+3], i
+set [c+2], i
+set [c+1], i
+ifg a, 0x7fff
+set [c], [angle_tostring_const1]
+ifl a, 0x8000
+set [c], key_space
+
+and [c+6], 0x000f
+add [c+6], 0x0030
+ifg [c+6], 0x0039
+add [c+6], 7
+
+and [c+5], 0x00f0
+shr [c+5], 4
+add [c+5], 0x0030
+ifg [c+5], 0x0039
+add [c+5], 7
+
+and [c+3], 0x000f
+add [c+3], 0x0030
+ifg [c+3], 0x0039
+add [c+3], 7
+
+and [c+2], 0x00f0
+shr [c+2], 4
+add [c+2], 0x0030
+ifg [c+2], 0x0039
+add [c+2], 7
+
+and [c+1], 0x0f00
+shr [c+1], 8
+add [c+1], 0x0030
+ifg [c+1], 0x0039
+add [c+1], 7
+
+set i, pop
+set j, pop
+set ex, pop
+set pc, pop
+
+:byte_tostring
+set [c], a
+and [c], 0x00f0
+shr [c], 4
+add [c], 0x0030
+ifg [c], 0x0039
+add [c], 7
+
+set [c+1], a
+and [c+1], 0x000f
+add [c+1], 0x0030
+ifg [c+1], 0x0039
+add [c+1], 7
+set pc, pop
+
+:word_tostring ;returns a 4 char hexadecimal string format: "0000"
+set push, ex
+set [c], a
+and [c], 0xf000
+shr [c], 12
+add [c], 0x0030
+ifg [c], 0x0039
+add [c], 7
+
+set [c+1], a
+and [c+1], 0x0f00
+shr [c+1], 8
+add [c+1], 0x0030
+ifg [c+1], 0x0039
+add [c+1], 7
+
+set [c+2], a
+and [c+2], 0x00f0
+shr [c+2], 4
+add [c+2], 0x0030
+ifg [c+2], 0x0039
+add [c+2], 7
+
+set [c+3], a
+and [c+3], 0x000f
+add [c+3], 0x0030
+ifg [c+3], 0x0039
+add [c+3], 7
+
+set ex, pop
+set pc, pop
+
+:dword_tostring ;returns an 8 char hexadecimal string format: "00000000"
+set push, a
+set push, c
+jsr word_tostring
+set a, b
+add c, 4
+jsr word_tostring
+set c, pop
+set a, pop
+set pc, pop
+
+:float_tostring ;like a dword but the string is in scientific notation. (a<<<16)+b = ieee754 single accuracy float
+set push, a
+set push, c
+set push, b
+set push, i
+set i, a
+and i, 0b0000000001111111
+and a, 0b1111111110000000
+ifg a, 0x7fff
+set [c], [angle_tostring_const1]
+ifl a, 0x8000
+set [c], key_space
+and a, 0b0111111110000000
+shr a, 7
+add c, 8
+jsr byte_tostring
+sub c, 5
+set a, b
+jsr word_tostring
+set a, i
+sub c, 2
+jsr byte_tostring
+set i, pop
+set b, pop
+set c, pop
+set a, pop
+set pc, pop
+;==============Display Data==================
+.define vram_size 384
+.define text_color 0x2000
+.define border_color 0x1000
+.define end_page 5
+.define keybind_selection_end 18
+:vector_dump
+dat 0, 0, 0, 0
+dat 0, 0, 0, 0
+dat 0, 0, 0, 0
+:hta_vector_dump
+dat 0, 0, 0, 0
+dat 0, 0, 0, 0
+dat 0, 0, 0, 0
+:ncc_dump
+dat 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff 
+:ffa_dump
+dat 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff
+:pps_dump
+dat 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff
+:hta_signature_dump
+dat 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff
+:hta_data_dump
+dat 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff
+:angle_tostring_const1 dat "-"
+:target dat 0
+:target_index dat 0
+:page dat 0
+
+
+:VRAM
+dat "                                "
+dat "                                "
+dat "                                "
+dat "                                "
+dat "                                "
+dat "        Initializing...         "
+dat "                                "
+dat "                                "
+dat "                                "
+dat "                                "
+dat "                                "
+dat "                                "
+dat 0
+
+:screen_map1
+dat "==== MegastageCS v0.4 Indev ===="
+dat "                                "
+dat "                                "
+dat "                                "
+dat "                                "
+dat "                                "
+dat "                                "
+dat "                                "
+dat "     Interface Controls:        "
+dat "   U/D arrow keys - selecting   "
+dat "   L/R arrow keys - paging      "
+dat "            Page 1/6 >          "
+dat 0
+:screen_map2
+dat "======Orbital info screen======="
+dat "00000000 :apoapsis (100m)       "
+dat "00000000 :periapse (100m)       "
+dat "0000     :eccentricity (1000ths)"
+dat "-000 00  :inclination           "
+dat "-000 00  :argument of periapse  "
+dat "======Gravity field data========"
+dat "Gravitational Parameter (kg):   "
+dat "-000000^00                      "
+dat "-000 00 :directional pitch      "
+dat "-000 00 :directional yaw        "
+dat "          < Page 2/6 >          "
+dat 0
+:screen_map3
+dat "=========Orbital times=========="
+dat "00000000 :sec. till apoapsis    "
+dat "00000000 :sec. till periapse    "
+dat "00000000 :sec. till asc. node   "
+dat "00000000 :sec. till des. node   "
+dat "00000000 :sec. Orbital Period   "
+dat "00000000 :m/s  Orbital Speed    "
+dat "00000000 :m/s^2 Acceleration    "
+dat "                                "
+dat "                                "
+dat "                                "
+dat "          < Page 3/6 >          "
+dat 0
+:screen_map4
+dat "=========PPS nav screen========="
+dat "0000 :sector number             "
+dat "                                "
+dat "00000000 :X coordinate (100m)   "
+dat "00000000 :Y coordinate (100m)   "
+dat "00000000 :Z coordinate (100m)   "
+dat "                                "
+dat "8000=unknown sector,            "
+dat "8001=no pulsars detected,       "
+dat "8002=malfunction                "
+dat "                                "
+dat "          < Page 4/6 >          "
+dat 0
+:screen_map5
+dat "=====Target 0000 Target Data===="
+dat "00000000 :rough mass (kg)       "
+dat "00000000 :distance (m)          "
+dat "-000 00  :directional pitch     "
+dat "-000 00  :directional yaw       "
+dat "-000 00  :argument of periapse  "
+dat "-000 00  :relative inclination  "
+dat "00000000 :apoapsis (100m)       "
+dat "00000000 :periapse (100m)       "
+dat "0000     :object type           "
+dat " 0=unknown 1=natural 2=manmade  "
+dat "          < Page 5/6 >          "
+dat 0
+:screen_map6
+dat "==========Key-binds============="
+dat "w", 0x1f, ":pitch +                      "
+dat "s :pitch -                      "
+dat "d :yaw >                        "
+dat "a :yaw <                        "
+dat "e :roll Ov                      "
+dat "q :roll vO                      "
+dat "r :throttle z+                  "
+dat "f :throttle z-                  "
+dat "x :throttle cut                 "
+dat "1 :primary weapon               "
+dat "2 :secondary weapon             "
+dat "c :credits                      "
+dat "  :unused                       "
+dat "  :unused                       "
+dat "  :unused                       "
+dat "  :unused                       "
+dat "  :unused                       "
+dat "  :unused                       "
+dat "  :unused                       "
+dat "          < Page 6/6            "
+dat 0
+:keybind_scroll dat 0
+:keybind_selection dat 0
+:screen_credits
+dat "===========Credits=============="
+dat "Cryptix Harbinger: Creator of   "
+dat "MegastageCS & Ender Innovations "
+dat "Orlof: Megastage                "
+dat "StillNoNumber: Suggestions      "
+dat "                                "
+dat "                                "
+dat "                                "
+dat "                                "
+dat "                                "
+dat "                                "
+dat "  press credits button to exit  "
+dat 0
+:screen_maps_end dat 0

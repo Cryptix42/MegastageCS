@@ -13,15 +13,17 @@ jsr memory_bor
 set a, 0
 set b, 0
 set c, 0
-jsr xlcmg_assigner
-jsr s8md_assigner
-jsr update_screen
+jsr gyro_assigner
+jsr engine_assigner
+jsr weapon_manager_init
 jsr keyboard_select
 jsr clock_select
 set b, 60
 jsr clock_tick_set
 set a, 1
 jsr clock_int_set
+jsr update_screen
+;============================End of init======================================
 :key_control_loop
 jsr keyboard_read_buffer
 ife c, 0
@@ -32,33 +34,101 @@ ife c, key_arrow_left
 jsr page_left
 ife c, key_space;depricate this at next update
 jsr update_screen
-ife c, key_w
+ife [page], 5
+set pc, keybind_key_loop
+;============================Main controls====================================
+ife c, [pitch_up]
 jsr w_pitch
-ife c, key_s
+ife c, [pitch_down]
 jsr s_pitch
-ife c, key_a
+ife c, [yaw_left]
 jsr a_yaw
-ife c, key_d
+ife c, [yaw_right]
 jsr d_yaw
-ife c, key_q
+ife c, [roll_counterwise]
 jsr q_roll
-ife c, key_e
+ife c, [roll_clockwise]
 jsr e_roll
-ife c, key_x
+ife c, [throttle_cut]
 jsr x_kill_throttle
-ife c, key_r
+ife c, [throttle_up]
 jsr r_throttle
-ife c, key_f
+ife c, [throttle_down]
 jsr f_throttle
+ife c, [primary_weapon] 
+jsr fire_primary
+ife c, [secondary_weapon] 
+jsr fire_secondary
+ife c, [credits]
+jsr credits_page
+
 ife [page], 4
 set pc, target_key_loop
 set pc, key_control_loop
+;================================Page exclusive loop controls==============================
+:keybind_key_loop
+ifg c, 0x2b
+ifl c, 0x7c
+jsr keybind_selection_set
+ife c, key_arrow_up
+jsr keybind_selection_up
+ife c, key_arrow_down
+jsr keybind_selection_down
+set pc, key_control_loop
+
 :target_key_loop
 ife c, key_arrow_up
 jsr target_selection_up
 ife c, key_arrow_down
 jsr target_selection_down
 set pc, key_control_loop
+;=====================================End of loop==========================================
+:keybind_selection_set
+set push, i
+set i, [keybind_selection]
+set [keybindings+i], c
+jsr update_screen
+jsr update_screen
+set i, pop
+set pc, pop
+
+:keybind_selection_up
+set push, i
+set i, [keybind_selection]
+mul i, 32
+add i, 33
+set [screen_map6+i], key_space
+ifn [keybind_selection], 0
+sub [keybind_selection], 1
+ifl [keybind_selection], [keybind_scroll]
+sub [keybind_scroll], 1
+set i, [keybind_selection]
+mul i, 32
+add i, 33
+set [screen_map6+i], 0x1f
+set i, pop
+jsr update_screen
+set pc, pop
+
+:keybind_selection_down
+set push, i
+set i, [keybind_selection]
+mul i, 32
+add i, 33
+set [screen_map6+i], key_space
+ifn [keybind_selection], keybind_selection_end
+add [keybind_selection], 1
+set i, [keybind_scroll]
+add i, 10
+ife [keybind_selection], i
+add [keybind_scroll], 1
+set i, [keybind_selection]
+mul i, 32
+add i, 33
+set [screen_map6+i], 0x1f
+set i, pop
+jsr update_screen
+set pc, pop
 
 :target_selection_up
 set push, b
@@ -101,6 +171,43 @@ set pc, pop
 ifn [page], 0
 sub [page], 1
 jsr update_screen
+set pc, pop
+
+:credits_page
+set push, a
+set push, b
+set push, c
+set push, i
+set a, VRAM
+set c, vram_size
+set b, screen_credits
+jsr memory_copy
+set b, text_color
+jsr memory_bor
+ife [credits_bool], 0
+set pc, credit_bool_check_skp
+jsr update_screen
+set [credits_bool], 0
+set i, pop
+set c, pop
+set b, pop
+set a, pop
+set pc, pop
+:credit_bool_check_skp
+set [credits_bool], 1
+set i, pop
+set c, pop
+set b, pop
+set a, pop
+set pc, pop
+:credits_bool dat 0
+
+:fire_primary
+jsr lasers_fire
+set pc, pop
+
+:fire_secondary
+
 set pc, pop
 
 :x_kill_throttle
@@ -229,6 +336,28 @@ set pc, pause
 
 :end
 set pc, end
+;===========================================Data and Imports===============================================
+:keybindings
+:pitch_up dat key_w
+:pitch_down dat key_s
+:yaw_right dat key_d
+:yaw_left dat key_a
+:roll_clockwise dat key_e
+:roll_counterwise dat key_q
+:throttle_up dat key_r
+:throttle_down dat key_f
+:throttle_cut dat key_x
+:primary_weapon dat key_1
+:secondary_weapon dat key_2
+:credits dat key_c
+dat key_space
+dat key_space
+dat key_space
+dat key_space
+dat key_space
+dat key_space
+dat key_space
+dat key_space
 
 .include HWdrivers\Clock.drv.dasm
 .include HWdrivers\FFA.drv.dasm
@@ -240,41 +369,13 @@ set pc, end
 .include HWdrivers\PPS.drv.dasm
 .include HWdrivers\S8MD.drv.dasm
 .include HWdrivers\XLCMG.drv.dasm
-.include Libraries\Display.lib.dasm
+.include HWdrivers\TLW-16.drv.dasm
 .include Libraries\Utility.lib.dasm
 .include Managers\Error.mgr.dasm
 .include Managers\Interrupt.mgr.dasm
+.include Managers\Weapon.mgr.dasm
+.include Managers\Flight.mgr.dasm
+.include Managers\Display.mgr.dasm
 .include Data\CONST.dat.dasm
 .include Data\ALLOC.dat.dasm
 
-;code junkyard
-;ife c, key_1
-;jsr target_selection
-;ife c, key_2
-;jsr target_selection
-;ife c, key_3
-;jsr target_selection
-;ife c, key_4
-;jsr target_selection
-;ife c, key_5
-;jsr target_selection
-;ife c, key_6
-;jsr target_selection
-;ife c, key_7
-;jsr target_selection
-;ife c, key_8
-;jsr target_selection
-;ife c, key_9
-;jsr target_selection
-;ife c, key_a
-;jsr target_selection
-;ife c, key_b
-;jsr target_selection
-;ife c, key_c
-;jsr target_selection
-;ife c, key_d
-;jsr target_selection
-;ife c, key_e
-;jsr target_selection
-;ife c, key_f
-;jsr target_selection

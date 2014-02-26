@@ -1,0 +1,66 @@
+; *************************
+; Project: MegastageCS
+; File: Weapon.mgr.dasm
+; *************************
+:weapon_manager_init
+set push, a
+set a, 0
+jsr lasers_set_wattage
+set b, 10
+jsr tlw16_set_wattage
+jsr lasers_set_time
+set a, pop
+set pc, pop
+
+:lasers_set_wattage ;param B. sets the firing power to B kilowatts
+set push, a
+set push, b
+set push, c
+jsr tlw16_amount
+set c, a
+set a, 0xffff
+:laser_set_watt_loop
+add a, 1
+set [OSerror], 0
+jsr tlw16_select
+ife [OSerror], 1
+set pc, laser_set_watt_brk
+set [laser_wattage], b
+jsr tlw16_set_wattage
+ifn a, c
+set pc, laser_set_watt_loop
+:laser_set_watt_brk
+set c, pop
+set b, pop
+set a, pop
+set pc, pop
+:laser_wattage dat 0
+
+:lasers_set_time ;param B. sets the firing time to B deciseconds
+set [laser_fire_time], b
+set pc, pop
+:laser_fire_time dat 0
+
+:lasers_fire ;fires all TLW-16s
+set push, a
+set push, b
+set push, c
+set push, i
+jsr tlw16_amount
+set i, a
+set a, 0xffff
+:laser_fire_loop
+add a, 1
+set [OSerror], 0
+jsr tlw16_select
+ife [OSerror], 1
+set pc, laser_fire_brk
+set c, [laser_fire_time]
+jsr tlw16_fire
+ifn a, i
+set pc, laser_fire_loop
+:laser_fire_brk
+set i, pop
+set c, pop
+set b, pop
+set a, pop

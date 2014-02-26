@@ -39,6 +39,9 @@ set pc, pop
 :clock_manager
 set [clock_tick_source], b
 ife b, 0
+ife [credits_bool], 0
+ifg [page], 0
+ifl [page], 5
 jsr update_screen
 set pc, pop
 
