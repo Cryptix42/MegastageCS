@@ -74,6 +74,8 @@ ife c, key_arrow_up
 jsr keybind_selection_up
 ife c, key_arrow_down
 jsr keybind_selection_down
+ife c, key_control
+jsr keybind_restore_default
 set pc, key_control_loop
 
 :target_key_loop
@@ -83,11 +85,24 @@ ife c, key_arrow_down
 jsr target_selection_down
 set pc, key_control_loop
 ;=====================================End of loop==========================================
+:keybind_restore_default
+set push, a
+set push, b
+set push, c
+set a, keybindings
+set b, default_keybindings_copy
+set c, 20
+jsr memory_copy
+set c, pop
+set b, pop
+set a, pop
+jsr update_screen
+set pc, pop
+
 :keybind_selection_set
 set push, i
 set i, [keybind_selection]
 set [keybindings+i], c
-jsr update_screen
 jsr update_screen
 set i, pop
 set pc, pop
@@ -358,6 +373,10 @@ dat key_space
 dat key_space
 dat key_space
 dat key_space
+dat 0
+:default_keybindings_copy
+dat key_w, key_s, key_d, key_a, key_e, key_q, key_r, key_f, key_x, key_1, key_2, key_c
+dat key_space, key_space, key_space, key_space, key_space, key_space, key_space, key_space
 
 .include HWdrivers\Clock.drv.dasm
 .include HWdrivers\FFA.drv.dasm

@@ -56,28 +56,31 @@ set a, pop
 set pc, pop
 
 :update_keybind_data
-set push, c
 set push, i
 set push, j
-set b, [keybind_scroll]
-mul b, 32
-add b, screen_map6
-jsr memory_copy
+set push, c
 set c, screen_map6
 set i, 0xffff
 set j, keybind_selection_end
 add j, 1
 mul j, 32
 add j, screen_map6
+
 :update_keybind_data_loop
 add c, 32
 add i, 1
 set [c], [keybindings+i]
 ifn c, j
 set pc, update_keybind_data_loop
+
+set a, VRAM
+set c, pop
+set b, [keybind_scroll]
+mul b, 32
+add b, screen_map6
+jsr memory_copy
 set j, pop
 set i, pop
-set c, pop
 set pc, pop
 
 :update_orbital_data
