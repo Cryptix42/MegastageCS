@@ -36,6 +36,8 @@ ife c, key_space;depricate this at next update
 jsr update_screen
 ife [page], 5
 set pc, keybind_key_loop
+ife [page], 6
+set pc, hwmanager_key_loop
 ;============================Main controls====================================
 ife c, [pitch_up]
 jsr w_pitch
@@ -78,6 +80,15 @@ ife c, key_control
 jsr keybind_restore_default
 set pc, key_control_loop
 
+:hwmanager_key_loop
+ife c, key_enter
+jsr hardware_selection_set
+ife c, key_arrow_up
+jsr hardware_selection_up
+ife c, key_arrow_down
+jsr hardware_selection_down
+set pc, key_control_loop
+
 :target_key_loop
 ife c, key_arrow_up
 jsr target_selection_up
@@ -85,6 +96,20 @@ ife c, key_arrow_down
 jsr target_selection_down
 set pc, key_control_loop
 ;=====================================End of loop==========================================
+:hardware_selection_down
+add [hardware_scroll], 1
+jsr update_screen
+set pc, pop
+
+:hardware_selection_up
+sub [hardware_scroll], 1
+jsr update_screen
+set pc, pop
+
+:hardware_selection_set
+
+set pc, pop
+
 :keybind_restore_default
 set push, a
 set push, b
