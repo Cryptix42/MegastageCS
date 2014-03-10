@@ -1,0 +1,6 @@
+; *************************
+; Project: MegastageCS
+; File: EIVD-16.drv.dasm
+; *************************
+.define eivd_id_a 0x3335
+.define eivd_id_b 0x436d

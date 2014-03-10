@@ -4,25 +4,30 @@
 ; *************************
 :init
 ias interrupt_manager
-set a, 0
-jsr init_screen
-set a, VRAM
-set c, vram_size
-set b, text_color
-jsr memory_bor
-set a, 0
-set b, 0
-set c, 0
 jsr gyro_assigner
 jsr engine_assigner
 jsr weapon_manager_init
 jsr keyboard_select
 jsr clock_select
+
+set b, 1
+jsr lasers_set_time
+set a, 0
+jsr lem1802_select
+set b, VRAM
+jsr lem1802_map_VRAM
+set a, VRAM
+set c, vram_size
+set b, text_color
+jsr memory_bor
 set b, 60
 jsr clock_tick_set
 set a, 1
 jsr clock_int_set
 jsr update_screen
+set a, 0
+set b, 0
+set c, 0
 ;============================End of init======================================
 :key_control_loop
 jsr keyboard_read_buffer
@@ -258,6 +263,9 @@ jsr s8md_select
 set [s8md_forward_power], 0
 set b, [s8md_forward_power]
 jsr s8md_set_power
+;set a, vector_forward
+;set b, 0
+;jsr engine_set
 set b, pop
 set a, pop
 set pc, pop
@@ -359,6 +367,13 @@ ifg [s8md_forward_power], 1000
 sub [s8md_forward_power], 10000
 set b, [s8md_forward_power]
 jsr s8md_set_power
+;set push, a
+;set push, b
+;set a, vector_forward
+;set b, 0
+;jsr engine_set
+;set b, pop
+;set a, pop
 set pc, pop
 
 :r_throttle
@@ -368,6 +383,13 @@ ifl [s8md_forward_power], 60000
 add [s8md_forward_power], 10000
 set b, [s8md_forward_power]
 jsr s8md_set_power
+;set push, a
+;set push, b
+;set a, vector_forward
+;set b, 10000
+;jsr engine_set
+;set b, pop
+;set a, pop
 set pc, pop
 
 :pause
@@ -414,6 +436,8 @@ dat key_space, key_space, key_space, key_space, key_space, key_space, key_space,
 .include HWdrivers\S8MD.drv.dasm
 .include HWdrivers\XLCMG.drv.dasm
 .include HWdrivers\TLW-16.drv.dasm
+.include HWdrivers\8k-UWTM.drv.dasm
+.include HWdrivers\EIVD-16.drv.dasm
 .include Libraries\Utility.lib.dasm
 .include Managers\Error.mgr.dasm
 .include Managers\Interrupt.mgr.dasm

@@ -2,18 +2,6 @@
 ; Project: MegastageCS
 ; File: Display.mgr.dasm
 ; *************************
-:init_screen ;param: A. sets up an lem1802 with the lem1802 index A.
-set push, a
-set push, b
-set push, c
-set c, 0
-jsr lem1802_select
-set b, VRAM
-jsr lem1802_map_VRAM
-set c, pop
-set b, pop
-set a, pop
-set pc, pop
 
 :update_screen
 set push, a
@@ -23,8 +11,6 @@ set push, i
 set a, VRAM
 set c, vram_size
 
-ife [page], 5
-jsr update_keybind_data
 ife [page], 0
 set b, screen_map1
 ife [page], 1
@@ -48,6 +34,8 @@ ife [page], 3
 jsr update_pps_data
 ife [page], 4 
 jsr update_target_data
+ife [page], 5
+jsr update_keybind_data
 ife [page], 6
 jsr update_hardware_data
 
@@ -115,6 +103,15 @@ ifn a, 0
 ifn b, 0
 ife z, 0xffff
 set z, 9
+ife a, ncc_id_a 
+ife b, ncc_id_b 
+set z, 10
+ife a, uwtm_id_a 
+ife b, uwtm_id_b 
+set z, 11
+ife a, eivd_id_a 
+ife b, eivd_id_b 
+set z, 12
 ifn z, 0xffff
 jsr hardware_data_print
 ifn j, i
@@ -190,11 +187,12 @@ ifn c, j
 set pc, update_keybind_data_loop
 
 set a, VRAM
-set c, pop
+set c, vram_size
 set b, [keybind_scroll]
 mul b, 32
 add b, screen_map6
 jsr memory_copy
+set c, pop
 set j, pop
 set i, pop
 set pc, pop
@@ -435,8 +433,10 @@ set pc, pop
 
 ;these functions convert a word/words from register A (and B in the case of a dword), to an ASCII string starting at C.
 ;==============
-:angle_tostring ;returns a 7 char string witha sign "-" or " ", degrees "000", a space, and minutes "00".
+:angle_tostring ;returns a 7 char string witha sign "-" or " ", degrees "00000", a space, and minutes "000".
 set push, ex
+set push, a
+set push, c
 set push, i
 set push, j
 set i, a
@@ -444,109 +444,142 @@ set j, a
 and j, 0b0000000000111111
 and i, 0b0111111111000000
 shr i, 6
-set [c+6], j
-set [c+5], j
-set [c+4], key_space
-set [c+3], i
-set [c+2], i
-set [c+1], i
 ifg a, 0x7fff
 set [c], [angle_tostring_const1]
 ifl a, 0x8000
 set [c], key_space
-
-and [c+6], 0x000f
-add [c+6], 0x0030
-ifg [c+6], 0x0039
-add [c+6], 7
-
-and [c+5], 0x00f0
-shr [c+5], 4
-add [c+5], 0x0030
-ifg [c+5], 0x0039
-add [c+5], 7
-
-and [c+3], 0x000f
-add [c+3], 0x0030
-ifg [c+3], 0x0039
-add [c+3], 7
-
-and [c+2], 0x00f0
-shr [c+2], 4
-add [c+2], 0x0030
-ifg [c+2], 0x0039
-add [c+2], 7
-
-and [c+1], 0x0f00
-shr [c+1], 8
-add [c+1], 0x0030
-ifg [c+1], 0x0039
-add [c+1], 7
-
+add c, 1
+set a, i
+jsr word_tostring
+add c, 6
+set a, j
+jsr byte_tostring
 set i, pop
 set j, pop
-set ex, pop
-set pc, pop
-
-:byte_tostring
-set [c], a
-and [c], 0x00f0
-shr [c], 4
-add [c], 0x0030
-ifg [c], 0x0039
-add [c], 7
-
-set [c+1], a
-and [c+1], 0x000f
-add [c+1], 0x0030
-ifg [c+1], 0x0039
-add [c+1], 7
-set pc, pop
-
-:word_tostring ;returns a 4 char hexadecimal string format: "0000"
-set push, ex
-set [c], a
-and [c], 0xf000
-shr [c], 12
-add [c], 0x0030
-ifg [c], 0x0039
-add [c], 7
-
-set [c+1], a
-and [c+1], 0x0f00
-shr [c+1], 8
-add [c+1], 0x0030
-ifg [c+1], 0x0039
-add [c+1], 7
-
-set [c+2], a
-and [c+2], 0x00f0
-shr [c+2], 4
-add [c+2], 0x0030
-ifg [c+2], 0x0039
-add [c+2], 7
-
-set [c+3], a
-and [c+3], 0x000f
-add [c+3], 0x0030
-ifg [c+3], 0x0039
-add [c+3], 7
-
-set ex, pop
-set pc, pop
-
-:dword_tostring ;returns an 8 char hexadecimal string format: "00000000"
-set push, a
-set push, c
-jsr word_tostring
-set a, b
-add c, 4
-jsr word_tostring
 set c, pop
 set a, pop
+set ex, pop
 set pc, pop
 
-:float_tostring ;like a dword but the string is in scientific notation. (a<<<16)+b = ieee754 single accuracy float
+:byte_tostring ;A=number, C=start of ram to write to
+;preparation
+AND A, 0x00ff
+SET [C], A
+SET [C+1], A
+SET [C+2], A
+;last digit
+MOD [C+2], 10
+;fourth digit
+DIV [C+1], 10
+MOD [C+1], 10
+;third digit
+DIV [C], 100
+MOD [C], 10
+BOR [C], 0x0030
+BOR [C+1], 0x0030
+BOR [C+2], 0x0030
+SET PC, POP
+
+:word_tostring ;A=number, C=start of ram to write to
+;preparation
+SET [C], A
+SET [C+1], A
+SET [C+2], A
+SET [C+3], A
+SET [C+4], A
+;last digit
+MOD [C+4], 10
+;fourth digit
+DIV [C+3], 10
+MOD [C+3], 10
+;third digit
+DIV [C+2], 100
+MOD [C+2], 10
+;second digit
+DIV [C+1], 1000
+MOD [C+1], 10
+;first digit
+DIV [C], 10000
+MOD [C], 10
+BOR [C], 0x0030
+BOR [C+1], 0x0030
+BOR [C+2], 0x0030
+BOR [C+3], 0x0030
+BOR [C+4], 0x0030
+SET PC, POP
+
+:dword_tostring ;C=start of ram to write to, A=high digits, B=low digits
+set push, a
+set push, b
+set push, c
+set push, i
+set push, j
+set push, x
+set push, y
+set push, z
+set push, ex
+set x, a
+set y, b
+set j, c
+set a, 0
+set b, 0
+set c, 0
+SET I, 10
+ADD J, 10
+:dword_tostring_loop
+STD [variable1], X
+SET [variable2], Y
+JSR secondCode
+SET [J], Y
+SET X, [variable1]
+SET Y, [variable2]
+JSR div10
+IFN I, 0
+SET PC, dword_tostring_loop
+BOR [J], 0x0030
+BOR [J+1], 0x0030
+BOR [J+2], 0x0030
+BOR [J+3], 0x0030
+BOR [J+4], 0x0030
+BOR [J+5], 0x0030
+BOR [J+6], 0x0030
+BOR [J+7], 0x0030
+BOR [J+8], 0x0030
+BOR [J+9], 0x0030
+set ex, pop
+set z, pop
+set y, pop
+set x, pop
+set j, pop
+set i, pop
+set c, pop
+set b, pop
+set a, pop
+SET PC, POP
+:secondCode
+MOD Y, 10
+MOD X, 10
+MUL X, 6
+ADD Y, X
+MOD Y, 10
+SET PC, POP
+:div10
+SET A, X
+SET Z, Y
+MOD A, 10
+MOD Z, 10
+SET B, A
+MUL B, 6
+ADD Z, B
+DIV Z, 10
+MUL A, 6553
+DIV X, 10
+DIV Y, 10
+ADD Y, A
+ADD Y, Z
+SET PC, POP
+
+:float_tostring ;like a dword but the string is in scientific notation. (a<<16)+b = ieee754 single accuracy float UNFINISHED!
 set push, a
 set push, c
 set push, b
@@ -559,14 +592,14 @@ set [c], [angle_tostring_const1]
 ifl a, 0x8000
 set [c], key_space
 and a, 0b0111111110000000
-shr a, 7
-add c, 8
-jsr byte_tostring
-sub c, 5
-set a, b
-jsr word_tostring
+set b, a
 set a, i
-sub c, 2
+jsr dword_tostring
+add c, 8
+set [c], [float_tostring_const1]
+add c, 1
+set a, b
+shr a, 7
 jsr byte_tostring
 set i, pop
 set b, pop
@@ -598,11 +631,14 @@ dat 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xff
 :hta_data_dump
 dat 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff
 :angle_tostring_const1 dat "-"
+:float_tostring_const1 dat "^"
 :hardware_list_var dat 0
 :hardware_list_var2 dat 0
 :target dat 0
 :target_index dat 0
 :page dat 0
+:variable1 DAT 0
+:variable2 DAT 0
 
 :hardware_names_list
 dat "Keyboard"
@@ -615,6 +651,9 @@ dat "PPS     "
 dat "FFA     "
 dat "TLW-16  "
 dat "unknown "
+dat "NCC-1701"
+dat "8k-UWTM "
+dat "EIVD-16 "
 
 :VRAM
 dat "                                "
@@ -632,7 +671,7 @@ dat "                                "
 dat 0
 
 :screen_map1
-dat "==== MegastageCS v0.4 Indev ===="
+dat "==== MegastageCS v0.5 Indev ===="
 dat "                                "
 dat "                                "
 dat "                                "
@@ -647,27 +686,27 @@ dat "            Page 1/7 >          "
 dat 0
 :screen_map2
 dat "=========Orbital info==========="
-dat "00000000 :apoapsis (100m)       "
-dat "00000000 :periapse (100m)       "
-dat "0000     :eccentricity (1000ths)"
-dat "-000 00  :inclination           "
-dat "-000 00  :argument of periapse  "
+dat "0000000000 :apoapsis (100m)     " 
+dat "0000000000 :periapse (100m)     "
+dat "00000    :eccentricity (1000ths)"
+dat "-00000 000 :inclination         "
+dat "-00000 000 :argument of periapse"
 dat "======Gravity field data========"
 dat "Gravitational Parameter (kg):   "
-dat "-000000^00                      "
-dat "-000 00 :directional pitch      "
-dat "-000 00 :directional yaw        "
+dat "-0000000^000                    "
+dat "-00000 000 :directional pitch   "
+dat "-00000 000 :directional yaw     "
 dat "          < Page 2/7 >          "
 dat 0
 :screen_map3
 dat "=========Orbital ETAs==========="
-dat "00000000 :sec. till apoapsis    "
-dat "00000000 :sec. till periapse    "
-dat "00000000 :sec. till asc. node   "
-dat "00000000 :sec. till des. node   "
-dat "00000000 :sec. Orbital Period   "
-dat "00000000 :m/s  Orbital Speed    "
-dat "00000000 :m/s^2 Acceleration    "
+dat "0000000000 :sec. till apoapsis  "
+dat "0000000000 :sec. till periapse  "
+dat "0000000000 :sec. till asc. node "
+dat "0000000000 :sec. till des. node "
+dat "0000000000 :sec. Orbital Period "
+dat "0000000000 :m/s  Orbital Speed  "
+dat "0000000000 :m/s^2 Acceleration  "
 dat "                                "
 dat "                                "
 dat "                                "
@@ -675,11 +714,11 @@ dat "          < Page 3/7 >          "
 dat 0
 :screen_map4
 dat "=========PPS navigation========="
-dat "0000 :sector number             "
+dat "00000 :sector number            "
 dat "                                "
-dat "00000000 :X coordinate (100m)   "
-dat "00000000 :Y coordinate (100m)   "
-dat "00000000 :Z coordinate (100m)   "
+dat "0000000000 :X coordinate (100m) "
+dat "0000000000 :Y coordinate (100m) "
+dat "0000000000 :Z coordinate (100m) "
 dat "                                "
 dat "8000=unknown sector             "
 dat "8001=no pulsars detected        "
@@ -688,16 +727,16 @@ dat "                                "
 dat "          < Page 4/7 >          "
 dat 0
 :screen_map5
-dat "=========Target 00 info========="
-dat "00000000 :rough mass (kg)       "
-dat "00000000 :distance (m)          "
-dat "-000 00  :directional pitch     "
-dat "-000 00  :directional yaw       "
-dat "-000 00  :argument of periapse  "
-dat "-000 00  :relative inclination  "
-dat "00000000 :apoapsis (100m)       "
-dat "00000000 :periapse (100m)       "
-dat "0000     :object type           "
+dat "=========Target 000 info========"
+dat "0000000000 :rough mass (kg)     "
+dat "0000000000 :distance (m)        "
+dat "-00000 000 :directional pitch   "
+dat "-00000 000 :directional yaw     "
+dat "-00000 000 :argument of periapse"
+dat "-00000 000 :relative inclination"
+dat "0000000000 :apoapsis (100m)     "
+dat "0000000000 :periapse (100m)     "
+dat "00000     :object type          "
 dat " 0=unknown 1=natural 2=manmade  "
 dat "          < Page 5/7 >          "
 dat 0
@@ -729,14 +768,14 @@ dat 0
 :screen_map7
 dat "===========Hardware============="
 dat "Name        Status  Error Device"
-dat "--------    ----    ----  <0000 "
-dat "--------    ----    ----        "
-dat "--------    ----    ----        "
-dat "--------    ----    ----        "
-dat "--------    ----    ----        "
-dat "--------    ----    ----        "
-dat "--------    ----    ----        "
-dat "--------    ----    ----        "
+dat "--------    -----   ----- <00000"
+dat "--------    -----   -----       "
+dat "--------    -----   -----       "
+dat "--------    -----   -----       "
+dat "--------    -----   -----       "
+dat "--------    -----   -----       "
+dat "--------    -----   -----       "
+dat "--------    -----   -----       "
 dat "                                "
 dat "          < Page 7/7            "
 dat 0
@@ -746,7 +785,7 @@ dat "===========Credits=============="
 dat "Cryptix Harbinger: Creator of   "
 dat "MegastageCS & Ender Innovations "
 dat "Orlof: Megastage                "
-dat "StillNoNumber: Suggestions      "
+dat "StillNoNumber: some useful code "
 dat "                                "
 dat "                                "
 dat "                                "
