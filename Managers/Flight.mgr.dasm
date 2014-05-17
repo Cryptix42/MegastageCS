@@ -90,44 +90,48 @@ set pc, pop
 :s8md_down_power dat 0
 
 ;a=engine vector, b=power. this function will set ALL engines with vector A to power B.
-:engine_set
+:engines_fire
 set push, a
 set push, b
 set push, c
-set push, i
-set push, j
-set i, a
-set j, b
+set push, x
+set push, y
+set push, z
+set [engine_power_param], b
+set [engine_vector_param], a
 jsr s8md_amount
-ife a, 0
-set pc, engine_set_skp
 set c, a
+sub c, 1
 set a, 0xffff
-:s8md_set_loop
+:engine_fire_loop
 add a, 1
+set [OSerror], 0
 jsr s8md_select
+ife [OSerror], 1
+set pc, engine_fire_brk
 jsr s8md_get_vector
-ife b, i
-jsr engine_set_pwr
+ifn b, [engine_vector_param]
+set pc, engine_fire_loop
+set push, b
+set b, [engine_power_param]
+jsr s8md_set_power
+set b, pop
 ifn a, c
-set pc, s8md_set_loop
-:engine_set_skp
-set j, pop
-set i, pop
+set pc, engine_fire_loop
+:engine_fire_brk
+set z, pop
+set y, pop
+set x, pop
 set c, pop
 set b, pop
 set a, pop
 set pc, pop
-:engine_set_pwr
-set push, b
-set b, j
-jsr s8md_set_power
-set b, pop
-set pc, pop
+:engine_power_param dat 0
+:engine_vector_param dat 0
 
-.define vector_forward 0x0009
-.define vector_reverse 0x0001
-.define vector_up 0x0010
-.define vector_down 0x0090
-.define vector_left 0x01000
-.define vector_right 0x09000
+.define vector_forward 0b0000000000001001
+.define vector_reverse 0b0000000000000001
+.define vector_up      0b0000000000010000
+.define vector_down    0x0000000010010000
+.define vector_left    0x0000000100000000
+.define vector_right   0x0000100100000000

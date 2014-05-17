@@ -5,18 +5,15 @@
 :init
 ias interrupt_manager
 jsr gyro_assigner
-jsr engine_assigner
+;jsr engine_assigner
 jsr weapon_manager_init
 jsr keyboard_select
 jsr clock_select
 
-set b, 1
-jsr lasers_set_time
-set a, 0
-jsr lem1802_select
-set b, VRAM
-jsr lem1802_map_VRAM
+ife [double_buffer_state], 0
 set a, VRAM
+ife [double_buffer_state], 1
+set a, VRAM2
 set c, vram_size
 set b, text_color
 jsr memory_bor
@@ -37,40 +34,38 @@ ife c, key_arrow_right
 jsr page_right
 ife c, key_arrow_left
 jsr page_left
-ife c, key_space;depricate this at next update
-jsr update_screen
 ife [page], 5
 set pc, keybind_key_loop
-ife [page], 6
-set pc, hwmanager_key_loop
 ;============================Main controls====================================
-ife c, [pitch_up]
-jsr w_pitch
-ife c, [pitch_down]
-jsr s_pitch
-ife c, [yaw_left]
-jsr a_yaw
-ife c, [yaw_right]
-jsr d_yaw
-ife c, [roll_counterwise]
-jsr q_roll
-ife c, [roll_clockwise]
-jsr e_roll
-ife c, [throttle_cut]
-jsr x_kill_throttle
-ife c, [throttle_up]
-jsr r_throttle
-ife c, [throttle_down]
-jsr f_throttle
-ife c, [primary_weapon] 
+ife c, [key_pitch_up]
+jsr pitch_up
+ife c, [key_pitch_down]
+jsr pitch_down
+ife c, [key_yaw_left]
+jsr yaw_left
+ife c, [key_yaw_right]
+jsr yaw_right
+ife c, [key_roll_counterwise]
+jsr roll_counterwise
+ife c, [key_roll_clockwise]
+jsr roll_clockwise
+ife c, [key_throttle_cut]
+jsr kill_throttle
+ife c, [key_throttle_up]
+jsr throttle_up
+ife c, [key_throttle_down]
+jsr throttle_down
+ife c, [key_primary_weapon] 
 jsr fire_primary
-ife c, [secondary_weapon] 
+ife c, [key_secondary_weapon] 
 jsr fire_secondary
-ife c, [credits]
+ife c, [key_credits]
 jsr credits_page
 
 ife [page], 4
 set pc, target_key_loop
+ife [page], 6
+set pc, hwmanager_key_loop
 set pc, key_control_loop
 ;================================Page exclusive loop controls==============================
 :keybind_key_loop
@@ -255,22 +250,7 @@ set pc, pop
 
 set pc, pop
 
-:x_kill_throttle
-set push, a
-set push, b
-set a, [s8md_forward_index]
-jsr s8md_select
-set [s8md_forward_power], 0
-set b, [s8md_forward_power]
-jsr s8md_set_power
-;set a, vector_forward
-;set b, 0
-;jsr engine_set
-set b, pop
-set a, pop
-set pc, pop
-
-:w_pitch
+:pitch_up
 set push, a
 set push, b
 set a, [gyro_x_index]
@@ -285,7 +265,7 @@ set b, pop
 set a, pop
 set pc, pop
 
-:s_pitch
+:pitch_down
 set push, a
 set push, b
 set a, [gyro_x_index]
@@ -300,7 +280,7 @@ set b, pop
 set a, pop
 set pc, pop
 
-:a_yaw
+:yaw_left
 set push, a
 set push, b
 set a, [gyro_y_index]
@@ -315,7 +295,7 @@ set b, pop
 set a, pop
 set pc, pop
 
-:d_yaw
+:yaw_right
 set push, a
 set push, b
 set a, [gyro_y_index]
@@ -330,7 +310,7 @@ set b, pop
 set a, pop
 set pc, pop
 
-:q_roll
+:roll_counterwise
 set push, a
 set push, b
 set a, [gyro_z_index]
@@ -345,7 +325,7 @@ set b, pop
 set a, pop
 set pc, pop
 
-:e_roll
+:roll_clockwise
 set push, a
 set push, b
 set a, [gyro_z_index]
@@ -360,36 +340,44 @@ set b, pop
 set a, pop
 set pc, pop
 
-:f_throttle
-set a, [s8md_forward_index]
-jsr s8md_select
-ifg [s8md_forward_power], 1000
-sub [s8md_forward_power], 10000
-set b, [s8md_forward_power]
-jsr s8md_set_power
-;set push, a
-;set push, b
-;set a, vector_forward
-;set b, 0
-;jsr engine_set
-;set b, pop
-;set a, pop
+:throttle_down
+;set a, [s8md_forward_index]
+;jsr s8md_select
+;ifg [s8md_forward_power], 0
+;sub [s8md_forward_power], 10000
+;set b, [s8md_forward_power]
+;jsr s8md_set_power
+set push, a
+set push, b
+set a, 0b0000000000001001
+set b, 0
+jsr engines_fire
+set b, pop
+set a, pop
 set pc, pop
 
-:r_throttle
+:throttle_up
+;set a, [s8md_forward_index]
+;jsr s8md_select
+;ifl [s8md_forward_power], 60000
+;add [s8md_forward_power], 10000
+;set b, [s8md_forward_power]
+;jsr s8md_set_power
+set push, a
+set push, b
+set a, 0b0000000000001001
+set b, 60000
+jsr engines_fire
+set b, pop
+set a, pop
+set pc, pop
+
+:kill_throttle
 set a, [s8md_forward_index]
 jsr s8md_select
-ifl [s8md_forward_power], 60000
-add [s8md_forward_power], 10000
+set [s8md_forward_power], 0
 set b, [s8md_forward_power]
 jsr s8md_set_power
-;set push, a
-;set push, b
-;set a, vector_forward
-;set b, 10000
-;jsr engine_set
-;set b, pop
-;set a, pop
 set pc, pop
 
 :pause
@@ -400,18 +388,18 @@ set pc, pause
 set pc, end
 ;===========================================Data and Imports===============================================
 :keybindings
-:pitch_up dat key_w
-:pitch_down dat key_s
-:yaw_right dat key_d
-:yaw_left dat key_a
-:roll_clockwise dat key_e
-:roll_counterwise dat key_q
-:throttle_up dat key_r
-:throttle_down dat key_f
-:throttle_cut dat key_x
-:primary_weapon dat key_1
-:secondary_weapon dat key_2
-:credits dat key_c
+:key_pitch_up dat key_w
+:key_pitch_down dat key_s
+:key_yaw_right dat key_d
+:key_yaw_left dat key_a
+:key_roll_clockwise dat key_e
+:key_roll_counterwise dat key_q
+:key_throttle_up dat key_r
+:key_throttle_down dat key_f
+:key_throttle_cut dat key_x
+:key_primary_weapon dat key_1
+:key_secondary_weapon dat key_2
+:key_credits dat key_c
 dat key_space
 dat key_space
 dat key_space
@@ -430,7 +418,6 @@ dat key_space, key_space, key_space, key_space, key_space, key_space, key_space,
 .include HWdrivers\HTA-90.drv.dasm
 .include HWdrivers\Keyboard.drv.dasm
 .include HWdrivers\LEM1802.drv.dasm
-;.include HWdrivers\M35FD.drv.dasm ====== NOT YET
 .include HWdrivers\NCC-1701.drv.dasm
 .include HWdrivers\PPS.drv.dasm
 .include HWdrivers\S8MD.drv.dasm
@@ -438,12 +425,10 @@ dat key_space, key_space, key_space, key_space, key_space, key_space, key_space,
 .include HWdrivers\TLW-16.drv.dasm
 .include HWdrivers\8k-UWTM.drv.dasm
 .include HWdrivers\EIVD-16.drv.dasm
+.include HWdrivers\UCPU.drv.dasm
 .include Libraries\Utility.lib.dasm
 .include Managers\Error.mgr.dasm
 .include Managers\Interrupt.mgr.dasm
 .include Managers\Weapon.mgr.dasm
 .include Managers\Flight.mgr.dasm
 .include Managers\Display.mgr.dasm
-.include Data\CONST.dat.dasm
-.include Data\ALLOC.dat.dasm
-

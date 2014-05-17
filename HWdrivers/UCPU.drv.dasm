@@ -1,0 +1,6 @@
+; *************************
+; Project: MegastageCS
+; File: UCPU.drv.dasm
+; *************************
+.define ucpu_id_a 0x4367
+.define ucpu_id_b 0xaff1

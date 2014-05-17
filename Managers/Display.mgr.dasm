@@ -8,7 +8,10 @@ set push, a
 set push, b
 set push, c
 set push, i
+ife [double_buffer_state], 0
 set a, VRAM
+ife [double_buffer_state], 1
+set a, VRAM2
 set c, vram_size
 
 ife [page], 0
@@ -41,6 +44,14 @@ jsr update_hardware_data
 
 set b, text_color
 jsr memory_bor
+set a, 0
+jsr lem1802_select
+ife [double_buffer_state], 0
+set b, VRAM
+ife [double_buffer_state], 1
+set b, VRAM2
+jsr lem1802_map_VRAM
+xor [double_buffer_state], 1
 set i, pop
 set c, pop
 set b, pop
@@ -63,7 +74,10 @@ set j, 0xffff
 add j, [hardware_scroll]
 set [hardware_list_var2], j
 add [hardware_list_var2], 8
+ife [double_buffer_state], 0
 set [hardware_list_var], VRAM+32
+ife [double_buffer_state], 1
+set [hardware_list_var], VRAM2+32
 
 :hardware_search_loop
 add [hardware_list_var], 32
@@ -112,6 +126,9 @@ set z, 11
 ife a, eivd_id_a 
 ife b, eivd_id_b 
 set z, 12
+ife a, ucpu_id_a 
+ife b, ucpu_id_b 
+set z, 13
 ifn z, 0xffff
 jsr hardware_data_print
 ifn j, i
@@ -119,7 +136,10 @@ ifn j, [hardware_list_var2]
 set pc, hardware_search_loop
 
 set a, [hardware_scroll]
+ife [double_buffer_state], 0
 set c, VRAM+91
+ife [double_buffer_state], 1
+set c, VRAM2+91
 jsr word_tostring
 set ex, pop
 set z, pop
@@ -134,36 +154,69 @@ set pc, pop
 :hardware_data_print
 set push, a
 set push, b
-set push, c
+ife z, 9
+set pc, unknown_hardware_data_print
 set a, [hardware_list_var]
 set b, z
 mul b, 8
 add b, hardware_names_list
 set c, 7
 jsr memory_copy
-set b, 0
-set c, 0
+
 ife z, 3
+jsr s8md_hardware_status_print
+ife z, 4
+jsr xlcmg_hardware_status_print
+ife z, 8
+jsr tlw16_hardware_status_print
+set b, pop
+set a, pop
+set pc, pop
+:s8md_hardware_status_print
 set [s8md], j
-ife z, 4
-set [xlcmg], j
-ife z, 8
-set [tlw16], j
-ife z, 3
 jsr s8md_get_status
-ife z, 4
-jsr xlcmg_get_status
-ife z, 8
-jsr tlw16_get_status
+add a, 12
+set push, a
 set a, b
 set b, c
-set c, [hardware_list_var+4]
-jsr word_tostring
-set a, b
-add c, 8
-jsr word_tostring
-set z, 0xffff
 set c, pop
+jsr word_tostring
+add c, 8
+set a, b
+jsr word_tostring
+set pc, pop
+:xlcmg_hardware_status_print
+set [xlcmg], j
+jsr xlcmg_get_status
+add a, 12
+set push, a
+set a, b
+set b, c
+set c, pop
+jsr word_tostring
+add c, 8
+set a, b
+jsr word_tostring
+set pc, pop
+:tlw16_hardware_status_print
+set [tlw16], j
+jsr tlw16_get_status
+add a, 12
+set push, a
+set a, b
+set b, c
+set c, pop
+jsr word_tostring
+add c, 8
+set a, b
+jsr word_tostring
+set pc, pop
+:unknown_hardware_data_print
+set c, [hardware_list_var]
+set push, a
+set a, b
+set b, pop
+jsr dword_to_hexstring
 set b, pop
 set a, pop
 set pc, pop
@@ -186,7 +239,10 @@ set [c], [keybindings+i]
 ifn c, j
 set pc, update_keybind_data_loop
 
+ife [double_buffer_state], 0
 set a, VRAM
+ife [double_buffer_state], 1
+set a, VRAM2
 set c, vram_size
 set b, [keybind_scroll]
 mul b, 32
@@ -212,33 +268,39 @@ set c, ncc_dump
 jsr ncc_get_orbital_elements
 set a, [ncc_dump]
 set b, [ncc_dump+1]
-set c, vram+32
+ife [double_buffer_state], 0
+set c, VRAM+32
+ife [double_buffer_state], 1
+set c, VRAM2+32
 jsr dword_tostring
 set a, [ncc_dump+2]
 set b, [ncc_dump+3]
-set c, vram+64
+add c, 32
 jsr dword_tostring
 set a, [ncc_dump+4]
-set c, vram+96
+add c, 32
 jsr word_tostring
 set a, [ncc_dump+5]
-set c, vram+128
+add c, 32
 jsr angle_tostring
 set a, [ncc_dump+6]
-set c, vram+160
+add c, 32
 jsr angle_tostring
 jsr ffa_get_soi
 set c, ffa_dump
 jsr ffa_field_data
 set a, [ffa_dump]
 set b, [ffa_dump+1]
-set c, vram+256
+ife [double_buffer_state], 0
+set c, VRAM+256
+ife [double_buffer_state], 1
+set c, VRAM2+256
 jsr float_tostring
 set a, [ffa_dump+2]
-set c, vram+288
+add c, 32
 jsr angle_tostring
 set a, [ffa_dump+3]
-set c, vram+320
+add c, 32
 jsr angle_tostring
 set c, pop
 set b, pop
@@ -260,31 +322,34 @@ set c, ncc_dump
 jsr ncc_get_times
 set a, [ncc_dump]
 set b, [ncc_dump+1]
-set c, vram+32
+ife [double_buffer_state], 0
+set c, VRAM+32
+ife [double_buffer_state], 1
+set c, VRAM2+32
 jsr dword_tostring
 set a, [ncc_dump+2]
 set b, [ncc_dump+3]
-set c, vram+64
+add c, 32
 jsr dword_tostring
 set a, [ncc_dump+4]
 set b, [ncc_dump+5]
-set c, vram+96
+add c, 32
 jsr dword_tostring
 set a, [ncc_dump+6]
 set b, [ncc_dump+7]
-set c, vram+128
+add c, 32
 jsr dword_tostring
 set a, [ncc_dump+8]
 set b, [ncc_dump+9]
-set c, vram+160
+add c, 32
 jsr dword_tostring
 set a, [ncc_dump+10]
 set b, [ncc_dump+11]
-set c, vram+192
+add c, 32
 jsr dword_tostring
 set a, [ncc_dump+12]
 set b, [ncc_dump+13]
-set c, vram+224
+add c, 32
 jsr dword_tostring
 set c, pop
 set b, pop
@@ -306,7 +371,10 @@ jsr hta90_get_signatures
 set b, [hta_signature_dump+c]
 set [target], b
 
+ife [double_buffer_state], 0
 set c, VRAM+16
+ife [double_buffer_state], 1
+set c, VRAM2+16
 set a, [target_index]
 jsr byte_tostring
 
@@ -334,10 +402,16 @@ set c, pop
 
 set b, vector_dump
 jsr ncc_compare_orbits
+ife [double_buffer_state], 0
 set c, VRAM+192
+ife [double_buffer_state], 1
+set c, VRAM2+192
 jsr angle_tostring
 set a, b
+ife [double_buffer_state], 0
 set c, VRAM+160
+ife [double_buffer_state], 1
+set c, VRAM2+160
 jsr angle_tostring
 
 set b, vector_dump
@@ -345,19 +419,31 @@ set c, ncc_dump
 jsr ncc_get_orbital_elements
 set a, [ncc_dump]
 set b, [ncc_dump+1]
+ife [double_buffer_state], 0
 set c, VRAM+224
+ife [double_buffer_state], 1
+set c, VRAM2+224
 jsr dword_tostring
 set a, [ncc_dump+2]
 set b, [ncc_dump+3]
+ife [double_buffer_state], 0
 set c, VRAM+256
+ife [double_buffer_state], 1
+set c, VRAM2+256
 jsr dword_tostring
 
 set a, [hta_data_dump]
+ife [double_buffer_state], 0
 set c, VRAM+288
+ife [double_buffer_state], 1
+set c, VRAM2+288
 jsr word_tostring
 set a, [hta_data_dump+1]
 set b, [hta_data_dump+2]
+ife [double_buffer_state], 0
 set c, VRAM+32
+ife [double_buffer_state], 1
+set c, VRAM2+32
 jsr dword_tostring
 set a, [hta_data_dump+3]
 set b, [hta_data_dump+4]
@@ -375,7 +461,10 @@ set b, pop
 set a, pop
 set pc, pop
 :update_target_data_skp
+ife [double_buffer_state], 0
 set c, VRAM+32
+ife [double_buffer_state], 1
+set c, VRAM2+32
 set b, 0xffff
 set a, 0xffff
 jsr dword_tostring
@@ -410,7 +499,10 @@ jsr pps_select
 set b, 0xffff
 jsr pps_get_sector
 set a, b
-set c, vram+32
+ife [double_buffer_state], 0
+set c, VRAM+32
+ife [double_buffer_state], 1
+set c, VRAM2+32
 jsr word_tostring
 set b, pps_dump
 jsr pps_get_coords
@@ -431,7 +523,9 @@ set b, pop
 set a, pop
 set pc, pop
 
-;these functions convert a word/words from register A (and B in the case of a dword), to an ASCII string starting at C.
+;these functions convert a word (or words) from register A (and B in the case of a dword), to an ASCII string starting at C.
+;All credits for byte_tostring, word_tostring, and dword_tostring go to StillNoNumber 
+;(http://www.0x10cforum.com/profile/2236555) formerly known as NaNDummy.
 ;==============
 :angle_tostring ;returns a 7 char string witha sign "-" or " ", degrees "00000", a space, and minutes "000".
 set push, ex
@@ -606,10 +700,73 @@ set b, pop
 set c, pop
 set a, pop
 set pc, pop
+
+:dword_to_hexstring
+set push, a
+set push, b
+set push, c
+
+set [c], a
+and [c], 0xf000
+shr [c], 12
+add [c], 0x0030
+ifg [c], 0x0039
+add [c], 0x0027
+
+set [c+1], a
+and [c+1], 0x0f00
+shr [c+1], 8
+add [c+1], 0x0030
+ifg [c+1], 0x0039
+add [c+1], 0x0027
+
+set [c+2], a
+and [c+2], 0x00f0
+shr [c+2], 4
+add [c+2], 0x0030
+ifg [c+2], 0x0039
+add [c+2], 0x0027
+
+set [c+3], a
+and [c+3], 0x000f
+add [c+3], 0x0030
+ifg [c+3], 0x0039
+add [c+3], 0x0027
+
+set [c+4], b
+and [c+4], 0xf000
+shr [c+4], 12
+add [c+4], 0x0030
+ifg [c+4], 0x0039
+add [c+4], 0x0027
+
+set [c+5], b
+and [c+5], 0x0f00
+shr [c+5], 8
+add [c+5], 0x0030
+ifg [c+5], 0x0039
+add [c+5], 0x0027
+
+set [c+6], b
+and [c+6], 0x00f0
+shr [c+6], 4
+add [c+6], 0x0030
+ifg [c+6], 0x0039
+add [c+6], 0x0027
+
+set [c+7], b
+and [c+7], 0x000f
+add [c+7], 0x0030
+ifg [c+7], 0x0039
+add [c+7], 0x0027
+
+set c, pop
+set b, pop
+set a, pop
+set pc, pop
 ;==============Display Data==================
 .define vram_size 384
-.define text_color 0x2000
-.define border_color 0x1000
+.define text_color 0x7000
 .define end_page 6
 .define keybind_selection_end 18
 :vector_dump
@@ -621,15 +778,15 @@ dat 0, 0, 0, 0
 dat 0, 0, 0, 0
 dat 0, 0, 0, 0
 :ncc_dump
-dat 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff 
+dat 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 
 :ffa_dump
-dat 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff
+dat 0, 0, 0, 0, 0, 0
 :pps_dump
-dat 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff
+dat 0, 0, 0, 0, 0, 0, 0, 0
 :hta_signature_dump
-dat 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff
+dat 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 :hta_data_dump
-dat 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff
+dat 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 :angle_tostring_const1 dat "-"
 :float_tostring_const1 dat "^"
 :hardware_list_var dat 0
@@ -639,6 +796,7 @@ dat 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xff
 :page dat 0
 :variable1 DAT 0
 :variable2 DAT 0
+:double_buffer_state dat 0
 
 :hardware_names_list
 dat "Keyboard"
@@ -654,6 +812,7 @@ dat "unknown "
 dat "NCC-1701"
 dat "8k-UWTM "
 dat "EIVD-16 "
+dat "UCPU    "
 
 :VRAM
 dat "                                "
@@ -668,7 +827,22 @@ dat "                                "
 dat "                                "
 dat "                                "
 dat "                                "
-dat 0
+dat 0, 0, 0, 0, 0, 0, 0, 0
+
+:VRAM2
+dat "                                "
+dat "                                "
+dat "                                "
+dat "                                "
+dat "                                "
+dat "        Initializing...         "
+dat "                                "
+dat "                                "
+dat "                                "
+dat "                                "
+dat "                                "
+dat "                                "
+dat 0, 0, 0, 0, 0, 0, 0, 0
 
 :screen_map1
 dat "==== MegastageCS v0.5 Indev ===="
@@ -720,9 +894,9 @@ dat "0000000000 :X coordinate (100m) "
 dat "0000000000 :Y coordinate (100m) "
 dat "0000000000 :Z coordinate (100m) "
 dat "                                "
-dat "8000=unknown sector             "
-dat "8001=no pulsars detected        "
-dat "8002=malfunction                "
+dat "32768=unknown sector            "
+dat "32769=no pulsars detected       "
+dat "32770=malfunction               "
 dat "                                "
 dat "          < Page 4/7 >          "
 dat 0

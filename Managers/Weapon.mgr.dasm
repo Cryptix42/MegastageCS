@@ -5,9 +5,9 @@
 :weapon_manager_init
 set push, a
 set a, 0
+set b, 100
 jsr lasers_set_wattage
 set b, 10
-jsr tlw16_set_wattage
 jsr lasers_set_time
 set a, pop
 set pc, pop
@@ -55,7 +55,7 @@ set [OSerror], 0
 jsr tlw16_select
 ife [OSerror], 1
 set pc, laser_fire_brk
-set c, [laser_fire_time]
+set b, [laser_fire_time]
 jsr tlw16_fire
 ifn a, i
 set pc, laser_fire_loop
