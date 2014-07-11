@@ -2,81 +2,12 @@
 ; Project: MegastageCS
 ; File: Interrupt.mgr.dasm
 ; *************************
-:interrupt_manager
-set push, b
-set push, c
-set push, i
-set push, j
-set push, x
-set push, y
-set push, z
-set push, ex
-set b, a
-and a, 0xff00
-shr a, 8
-and b, 0x00ff
-ife a, 0x0
-jsr software_manager
-ife a, 0x1
-jsr clock_manager
-ife a, 0x2
-jsr keyboard_manager
-ife a, 0x3
-jsr m35fd_manager
-set ex, pop
-set z, pop
-set y, pop
-set x, pop
-set j, pop
-set i, pop
-set c, pop
-set b, pop
+:interrupt_manager ;to call the API manager simply call an interrupt with message 0xffff
+ifn a, 0xffff
+jsr a
+ife a, 0xffff
+jsr interrupt_api
 rfi 0
 
-:software_manager;I am planning an API function accessing system that will use this handler to allow apps to access functions in the API.
+:interrupt_api;this function can be called with "int 0xffff" and takes all registers as parameters (including A but in the form of PEEK).
 set pc, pop
-
-:clock_manager
-set [clock_tick_source], b
-ife b, 0
-ife [credits_bool], 0
-ifg [page], 0
-ifl [page], 5
-jsr update_screen
-ife [page], 6
-jsr update_screen
-set pc, pop
-
-:keyboard_manager
-set push, a
-set push, b
-set a, b
-jsr keyboard_select
-jsr keyboard_read_buffer
-set [keyboard_key_source], b
-set [keyboard_key_buffer], a
-set b, pop
-set a, pop
-set pc, pop
-
-:m35fd_manager
-set push, a
-set push, b
-set [m35fd_state_source], b
-set a, b
-;jsr m35fd_select
-;jsr m35fd_check_status
-set [m35fd_state_buffer], a
-set [m35fd_error_buffer], b
-set b, pop
-set a, pop
-set pc, pop
-
-:m35fd_state_source dat 0
-:m35fd_state_buffer dat 0
-:m35fd_error_buffer dat 0
-
-:clock_tick_source dat 0
-
-:keyboard_key_source dat 0
-:keyboard_key_buffer dat 0

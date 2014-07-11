@@ -1,0 +1,100 @@
+; *************************
+; Project: MegastageCS
+; File: Battery.drv.dasm
+; *************************
+.define battery_id_a 0x39b2
+.define battery_id_b 0x83fc
+:battery_index dat 0xffff
+:battery dat 0xffff
+
+:battery_select;Param A. "selects" a clock for the clock functions to interact with.
+set push, a
+set push, b
+set push, c
+set push, i
+set push, j
+set push, x
+set push, y
+set push, z
+set push, ex
+set [battery_index], a
+hwn i
+sub i, 1
+set j, 0xffff
+set z, a
+:battery_search_loop
+add j, 1
+hwq j
+ife a, battery_id_a
+ife b, battery_id_b
+sub z, 1
+ife j, i
+ifn z, 0xffff
+jsr error_no_such_device
+ife j, i
+ifn z, 0xffff
+set pc, battery_search_loop_brk
+ife z, 0xffff
+set [battery], j
+ifn z, 0xffff
+set pc, battery_search_loop
+:battery_search_loop_brk
+set ex, pop
+set z, pop
+set y, pop
+set x, pop
+set j, pop
+set i, pop
+set c, pop
+set b, pop
+set a, pop
+set pc, pop
+
+:battery_amount
+set push, b
+set push, c
+set push, i
+set push, j
+set push, x
+set push, y
+set push, z
+set push, ex
+hwn i
+sub i, 1
+set j, 0xffff
+set z, 0
+:battery_search_loop2
+add j, 1
+hwq j
+ife a, battery_id_a
+ife b, battery_id_b
+add z, 1
+ifn j, i
+set pc, battery_search_loop2
+set a, z
+set ex, pop
+set z, pop
+set y, pop
+set x, pop
+set j, pop
+
+:battery_get_energy
+set push, a
+set a, 0
+hwi [battery]
+set a, pop
+set pc, pop
+
+:battery_set_input
+set push, a
+set a, 1
+hwi [battery]
+set a, pop
+set pc, pop
+
+:battery_set_output
+set push, a
+set a, 2
+hwi [battery]
+set a, pop
+set pc, pop

@@ -110,8 +110,7 @@ set push, b
 set push, c
 set c, a
 set a, 3
-set b, [keyboard_index]
-bor b, 0x0200
+set b, keyboard_int_manager
 ife c, 0
 set b, 0
 hwi [keyboard]
@@ -119,6 +118,16 @@ set c, pop
 set b, pop
 set a, pop
 set pc, pop
+
+:keyboard_int_manager;This must never be called by anything other than the interrupt manager
+set push, a
+set push, b
+jsr keyboard_read_buffer
+set [keyboard_key_buffer], a
+set b, pop
+set a, pop
+set pc, pop
+:keyboard_key_buffer dat 0
 
 ;Keys
 .define key_0 0x30

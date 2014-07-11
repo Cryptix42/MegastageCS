@@ -1,0 +1,114 @@
+; *************************
+; Project: MegastageCS
+; File: EIVD-16.drv.dasm
+; *************************
+.define eivd_id_a 0x3335
+.define eivd_id_b 0x436d
+:eivd_index dat 0xffff
+:eivd dat 0xffff
+
+:eivd_select;Param A. "selects" a clock for the clock functions to interact with.
+set push, a
+set push, b
+set push, c
+set push, i
+set push, j
+set push, x
+set push, y
+set push, z
+set push, ex
+set [eivd_index], a
+hwn i
+sub i, 1
+set j, 0xffff
+set z, a
+:eivd_search_loop
+add j, 1
+hwq j
+ife a, eivd_id_a
+ife b, eivd_id_b
+sub z, 1
+ife j, i
+ifn z, 0xffff
+jsr error_no_such_device
+ife j, i
+ifn z, 0xffff
+set pc, eivd_search_loop_brk
+ife z, 0xffff
+set [eivd], j
+ifn z, 0xffff
+set pc, eivd_search_loop
+:eivd_search_loop_brk
+set ex, pop
+set z, pop
+set y, pop
+set x, pop
+set j, pop
+set i, pop
+set c, pop
+set b, pop
+set a, pop
+set pc, pop
+
+:eivd_amount
+set push, b
+set push, c
+set push, i
+set push, j
+set push, x
+set push, y
+set push, z
+set push, ex
+hwn i
+sub i, 1
+set j, 0xffff
+set z, 0
+:eivd_search_loop2
+add j, 1
+hwq j
+ife a, eivd_id_a
+ife b, eivd_id_b
+add z, 1
+ifn j, i
+set pc, eivd_search_loop2
+set a, z
+set ex, pop
+set z, pop
+set y, pop
+set x, pop
+set j, pop
+
+:eivd_get_status
+set push, a
+set a, 0
+hwi [eivd]
+set a, pop
+set pc, pop
+
+:eivd_map_vectors
+set push, a
+set a, 1
+hwi [eivd]
+set a, pop
+set pc, pop
+
+:eivd_map_palette
+set push, a
+set a, 2
+hwi [eivd]
+set a, pop
+set pc, pop
+
+:eivd_dump_palette
+set push, a
+set a, 3
+hwi [eivd]
+set a, pop
+set pc, pop
+
+:eivd_rotate_display
+set push, a
+set a, 4
+hwi [eivd]
+set a, pop
+set pc, pop

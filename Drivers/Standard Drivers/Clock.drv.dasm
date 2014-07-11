@@ -102,12 +102,30 @@ set push, b
 set push, c
 set c, a
 set a, 2
-set b, [clock_index]
-bor b, 0x0100
+set b, clock_int_manager
 ife c, 0
 set b, 0
+set [clock_ticks], 0
+set [clock_ticks+1], 0
 hwi [clock]
 set c, pop
 set b, pop
 set a, pop
 set pc, pop
+
+:clock_int_manager;This must never be called by anything other than the interrupt manager
+set push, ex
+set ex, 0
+add [clock_ticks+1], 1
+add [clock_ticks], ex
+set ex, pop
+
+ife [credits_bool], 0
+ifg [page], 0
+ifl [page], 5
+jsr update_screen
+ife [page], 6
+jsr update_screen
+
+set pc, pop
+:clock_ticks dat 0, 0

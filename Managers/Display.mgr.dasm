@@ -129,6 +129,15 @@ set z, 12
 ife a, ucpu_id_a 
 ife b, ucpu_id_b 
 set z, 13
+ife a, battery_id_a 
+ife b, battery_id_b 
+set z, 14
+ife a, generator_id_a 
+ife b, generator_id_b 
+set z, 15
+ife a, shield_id_a 
+ife b, shield_id_b 
+set z, 16
 ifn z, 0xffff
 jsr hardware_data_print
 ifn j, i
@@ -523,10 +532,7 @@ set b, pop
 set a, pop
 set pc, pop
 
-;these functions convert a word (or words) from register A (and B in the case of a dword), to an ASCII string starting at C.
-;All credits for byte_tostring, word_tostring, and dword_tostring go to StillNoNumber 
-;(http://www.0x10cforum.com/profile/2236555) formerly known as NaNDummy.
-;==============
+;===========================================================================================================================
 :angle_tostring ;returns a 7 char string witha sign "-" or " ", degrees "00000", a space, and minutes "000".
 set push, ex
 set push, a
@@ -555,124 +561,6 @@ set a, pop
 set ex, pop
 set pc, pop
 
-:byte_tostring ;A=number, C=start of ram to write to
-;preparation
-AND A, 0x00ff
-SET [C], A
-SET [C+1], A
-SET [C+2], A
-;last digit
-MOD [C+2], 10
-;fourth digit
-DIV [C+1], 10
-MOD [C+1], 10
-;third digit
-DIV [C], 100
-MOD [C], 10
-BOR [C], 0x0030
-BOR [C+1], 0x0030
-BOR [C+2], 0x0030
-SET PC, POP
-
-:word_tostring ;A=number, C=start of ram to write to
-;preparation
-SET [C], A
-SET [C+1], A
-SET [C+2], A
-SET [C+3], A
-SET [C+4], A
-;last digit
-MOD [C+4], 10
-;fourth digit
-DIV [C+3], 10
-MOD [C+3], 10
-;third digit
-DIV [C+2], 100
-MOD [C+2], 10
-;second digit
-DIV [C+1], 1000
-MOD [C+1], 10
-;first digit
-DIV [C], 10000
-MOD [C], 10
-BOR [C], 0x0030
-BOR [C+1], 0x0030
-BOR [C+2], 0x0030
-BOR [C+3], 0x0030
-BOR [C+4], 0x0030
-SET PC, POP
-
-:dword_tostring ;C=start of ram to write to, A=high digits, B=low digits
-set push, a
-set push, b
-set push, c
-set push, i
-set push, j
-set push, x
-set push, y
-set push, z
-set push, ex
-set x, a
-set y, b
-set j, c
-set a, 0
-set b, 0
-set c, 0
-SET I, 10
-ADD J, 10
-:dword_tostring_loop
-STD [variable1], X
-SET [variable2], Y
-JSR secondCode
-SET [J], Y
-SET X, [variable1]
-SET Y, [variable2]
-JSR div10
-IFN I, 0
-SET PC, dword_tostring_loop
-BOR [J], 0x0030
-BOR [J+1], 0x0030
-BOR [J+2], 0x0030
-BOR [J+3], 0x0030
-BOR [J+4], 0x0030
-BOR [J+5], 0x0030
-BOR [J+6], 0x0030
-BOR [J+7], 0x0030
-BOR [J+8], 0x0030
-BOR [J+9], 0x0030
-set ex, pop
-set z, pop
-set y, pop
-set x, pop
-set j, pop
-set i, pop
-set c, pop
-set b, pop
-set a, pop
-SET PC, POP
-:secondCode
-MOD Y, 10
-MOD X, 10
-MUL X, 6
-ADD Y, X
-MOD Y, 10
-SET PC, POP
-:div10
-SET A, X
-SET Z, Y
-MOD A, 10
-MOD Z, 10
-SET B, A
-MUL B, 6
-ADD Z, B
-DIV Z, 10
-MUL A, 6553
-DIV X, 10
-DIV Y, 10
-ADD Y, A
-ADD Y, Z
-SET PC, POP
-
 :float_tostring ;like a dword but the string is in scientific notation. (a<<16)+b = ieee754 single accuracy float UNFINISHED!
 set push, a
 set push, c
@@ -698,70 +586,6 @@ jsr byte_tostring
 set i, pop
 set b, pop
 set c, pop
-set a, pop
-set pc, pop
-
-:dword_to_hexstring
-set push, a
-set push, b
-set push, c
-
-set [c], a
-and [c], 0xf000
-shr [c], 12
-add [c], 0x0030
-ifg [c], 0x0039
-add [c], 0x0027
-
-set [c+1], a
-and [c+1], 0x0f00
-shr [c+1], 8
-add [c+1], 0x0030
-ifg [c+1], 0x0039
-add [c+1], 0x0027
-
-set [c+2], a
-and [c+2], 0x00f0
-shr [c+2], 4
-add [c+2], 0x0030
-ifg [c+2], 0x0039
-add [c+2], 0x0027
-
-set [c+3], a
-and [c+3], 0x000f
-add [c+3], 0x0030
-ifg [c+3], 0x0039
-add [c+3], 0x0027
-
-set [c+4], b
-and [c+4], 0xf000
-shr [c+4], 12
-add [c+4], 0x0030
-ifg [c+4], 0x0039
-add [c+4], 0x0027
-
-set [c+5], b
-and [c+5], 0x0f00
-shr [c+5], 8
-add [c+5], 0x0030
-ifg [c+5], 0x0039
-add [c+5], 0x0027
-
-set [c+6], b
-and [c+6], 0x00f0
-shr [c+6], 4
-add [c+6], 0x0030
-ifg [c+6], 0x0039
-add [c+6], 0x0027
-
-set [c+7], b
-and [c+7], 0x000f
-add [c+7], 0x0030
-ifg [c+7], 0x0039
-add [c+7], 0x0027
-
-set c, pop
-set b, pop
 set a, pop
 set pc, pop
 ;==============Display Data==================
@@ -813,6 +637,9 @@ dat "NCC-1701"
 dat "8k-UWTM "
 dat "EIVD-16 "
 dat "UCPU    "
+dat "Battery "
+dat "PowerGen"
+dat "Shield  "
 
 :VRAM
 dat "                                "
@@ -828,7 +655,6 @@ dat "                                "
 dat "                                "
 dat "                                "
 dat 0, 0, 0, 0, 0, 0, 0, 0
-
 :VRAM2
 dat "                                "
 dat "                                "
@@ -969,3 +795,29 @@ dat "                                "
 dat "  press credits button to exit  "
 dat 0
 :screen_maps_end dat 0
+
+:keybindings
+:key_pitch_up dat key_w
+:key_pitch_down dat key_s
+:key_yaw_right dat key_d
+:key_yaw_left dat key_a
+:key_roll_clockwise dat key_e
+:key_roll_counterwise dat key_q
+:key_throttle_up dat key_r
+:key_throttle_down dat key_f
+:key_throttle_cut dat key_x
+:key_primary_weapon dat key_1
+:key_secondary_weapon dat key_2
+:key_credits dat key_c
+dat key_space
+dat key_space
+dat key_space
+dat key_space
+dat key_space
+dat key_space
+dat key_space
+dat key_space
+dat 0
+:default_keybindings_copy
+dat key_w, key_s, key_d, key_a, key_e, key_q, key_r, key_f, key_x, key_1, key_2, key_c
+dat key_space, key_space, key_space, key_space, key_space, key_space, key_space, key_space

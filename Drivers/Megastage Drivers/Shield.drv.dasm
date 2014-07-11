@@ -1,0 +1,107 @@
+; *************************
+; Project: MegastageCS
+; File: Sheild.drv.dasm
+; *************************
+.define shield_id_a 0xd666
+.define shield_id_b 0xf1e7
+:shield_index dat 0xffff
+:shield dat 0xffff
+
+:shield_select;Param A. "selects" a clock for the clock functions to interact with.
+set push, a
+set push, b
+set push, c
+set push, i
+set push, j
+set push, x
+set push, y
+set push, z
+set push, ex
+set [shield_index], a
+hwn i
+sub i, 1
+set j, 0xffff
+set z, a
+:shield_search_loop
+add j, 1
+hwq j
+ife a, shield_id_a
+ife b, shield_id_b
+sub z, 1
+ife j, i
+ifn z, 0xffff
+jsr error_no_such_device
+ife j, i
+ifn z, 0xffff
+set pc, shield_search_loop_brk
+ife z, 0xffff
+set [shield], j
+ifn z, 0xffff
+set pc, shield_search_loop
+:shield_search_loop_brk
+set ex, pop
+set z, pop
+set y, pop
+set x, pop
+set j, pop
+set i, pop
+set c, pop
+set b, pop
+set a, pop
+set pc, pop
+
+:shield_amount
+set push, b
+set push, c
+set push, i
+set push, j
+set push, x
+set push, y
+set push, z
+set push, ex
+hwn i
+sub i, 1
+set j, 0xffff
+set z, 0
+:shield_search_loop2
+add j, 1
+hwq j
+ife a, shield_id_a
+ife b, shield_id_b
+add z, 1
+ifn j, i
+set pc, shield_search_loop2
+set a, z
+set ex, pop
+set z, pop
+set y, pop
+set x, pop
+set j, pop
+
+:shield_get_status
+set push, a
+set a, 0
+hwi [shield]
+set a, pop
+set pc, pop
+
+:shield_get_radius
+set push, a
+set a, 1
+hwi [shield]
+set a, pop
+set pc, pop
+
+:shield_get_energy
+set push, a
+set a, 2
+hwi [shield]
+set a, pop
+set pc, pop
+
+:shield_set_intake
+set push, a
+set a, 3
+hwi [shield]
+set a, pop
+set pc, pop

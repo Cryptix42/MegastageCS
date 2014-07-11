@@ -5,7 +5,7 @@
 :init
 ias interrupt_manager
 jsr gyro_assigner
-;jsr engine_assigner
+jsr engine_assigner
 jsr weapon_manager_init
 jsr keyboard_select
 jsr clock_select
@@ -386,49 +386,28 @@ set pc, pause
 
 :end
 set pc, end
-;===========================================Data and Imports===============================================
-:keybindings
-:key_pitch_up dat key_w
-:key_pitch_down dat key_s
-:key_yaw_right dat key_d
-:key_yaw_left dat key_a
-:key_roll_clockwise dat key_e
-:key_roll_counterwise dat key_q
-:key_throttle_up dat key_r
-:key_throttle_down dat key_f
-:key_throttle_cut dat key_x
-:key_primary_weapon dat key_1
-:key_secondary_weapon dat key_2
-:key_credits dat key_c
-dat key_space
-dat key_space
-dat key_space
-dat key_space
-dat key_space
-dat key_space
-dat key_space
-dat key_space
-dat 0
-:default_keybindings_copy
-dat key_w, key_s, key_d, key_a, key_e, key_q, key_r, key_f, key_x, key_1, key_2, key_c
-dat key_space, key_space, key_space, key_space, key_space, key_space, key_space, key_space
 
-.include HWdrivers\Clock.drv.dasm
-.include HWdrivers\FFA.drv.dasm
-.include HWdrivers\HTA-90.drv.dasm
-.include HWdrivers\Keyboard.drv.dasm
-.include HWdrivers\LEM1802.drv.dasm
-.include HWdrivers\NCC-1701.drv.dasm
-.include HWdrivers\PPS.drv.dasm
-.include HWdrivers\S8MD.drv.dasm
-.include HWdrivers\XLCMG.drv.dasm
-.include HWdrivers\TLW-16.drv.dasm
-.include HWdrivers\8k-UWTM.drv.dasm
-.include HWdrivers\EIVD-16.drv.dasm
-.include HWdrivers\UCPU.drv.dasm
+;===========================================Imports===============================================
+.include Drivers\Megastage Drivers\8k-UWTM.drv.dasm
+.include Drivers\Megastage Drivers\Battery.drv.dasm
+.include Drivers\Megastage Drivers\EIVD-16.drv.dasm
+.include Drivers\Megastage Drivers\FFA.drv.dasm
+.include Drivers\Megastage Drivers\Generator.drv.dasm
+.include Drivers\Megastage Drivers\HTA-90.drv.dasm
+.include Drivers\Megastage Drivers\NCC-1701.drv.dasm
+.include Drivers\Megastage Drivers\PPS.drv.dasm
+.include Drivers\Megastage Drivers\S8MD.drv.dasm
+.include Drivers\Megastage Drivers\Shield.drv.dasm
+.include Drivers\Megastage Drivers\TLW-16.drv.dasm
+.include Drivers\Megastage Drivers\UCPU.drv.dasm
+.include Drivers\Megastage Drivers\XLCMG.drv.dasm
+.include Drivers\Standard Drivers\Clock.drv.dasm
+.include Drivers\Standard Drivers\Keyboard.drv.dasm
+.include Drivers\Standard Drivers\LEM1802.drv.dasm
+.include Drivers\Standard Drivers\M35FDFileDriver.drv.dasm
 .include Libraries\Utility.lib.dasm
+.include Managers\Display.mgr.dasm
 .include Managers\Error.mgr.dasm
+.include Managers\Flight.mgr.dasm
 .include Managers\Interrupt.mgr.dasm
 .include Managers\Weapon.mgr.dasm
-.include Managers\Flight.mgr.dasm
-.include Managers\Display.mgr.dasm

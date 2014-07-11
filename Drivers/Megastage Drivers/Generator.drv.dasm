@@ -1,0 +1,100 @@
+; *************************
+; Project: MegastageCS
+; File: Generator.drv.dasm
+; *************************
+.define generator_id_a 0x886a
+.define generator_id_b 0x1574
+:generator_index dat 0xffff
+:generator dat 0xffff
+
+:generator_select;Param A. "selects" a clock for the clock functions to interact with.
+set push, a
+set push, b
+set push, c
+set push, i
+set push, j
+set push, x
+set push, y
+set push, z
+set push, ex
+set [generator_index], a
+hwn i
+sub i, 1
+set j, 0xffff
+set z, a
+:generator_search_loop
+add j, 1
+hwq j
+ife a, generator_id_a
+ife b, generator_id_b
+sub z, 1
+ife j, i
+ifn z, 0xffff
+jsr error_no_such_device
+ife j, i
+ifn z, 0xffff
+set pc, generator_search_loop_brk
+ife z, 0xffff
+set [generator], j
+ifn z, 0xffff
+set pc, generator_search_loop
+:generator_search_loop_brk
+set ex, pop
+set z, pop
+set y, pop
+set x, pop
+set j, pop
+set i, pop
+set c, pop
+set b, pop
+set a, pop
+set pc, pop
+
+:generator_amount
+set push, b
+set push, c
+set push, i
+set push, j
+set push, x
+set push, y
+set push, z
+set push, ex
+hwn i
+sub i, 1
+set j, 0xffff
+set z, 0
+:generator_search_loop2
+add j, 1
+hwq j
+ife a, generator_id_a
+ife b, generator_id_b
+add z, 1
+ifn j, i
+set pc, generator_search_loop2
+set a, z
+set ex, pop
+set z, pop
+set y, pop
+set x, pop
+set j, pop
+
+:generator_get_status
+set push, a
+set a, 0
+hwi [generator]
+set a, pop
+set pc, pop
+
+:generator_set_output
+set push, a
+set a, 1
+hwi [generator]
+set a, pop
+set pc, pop
+
+:generator_get_temp
+set push, a
+set a, 2
+hwi [generator]
+set a, pop
+set pc, pop

@@ -1,0 +1,37 @@
+Name: LEM1802 - Low Energy Monitor
+ID: 0x7349f615
+version: 0x1802
+Manufacturer: 0x1c6c8b36 (NYA_ELEKTRISKA)
+Description:
+    The LEM1802 is a 128x96 pixel color display compatible with the DCPU-16.
+    The display is made up of 32x12 16 bit cells. Each cell displays one
+    monochrome 4x8 pixel character out of 128 available. Each cell has its own
+    foreground and background color out of a palette of 16 colors.
+
+A Behavior
+
+0: MEM_MAP_SCREEN
+       Reads the B register, and maps the video ram to DCPU-16 ram starting
+       at address B. See below for a description of video ram.
+       If B is 0, the screen is disconnected.
+       When the screen goes from 0 to any other value, the the LEM1802 takes
+       about one second to start up. Other interrupts sent during this time
+       are still processed.
+1: MEM_MAP_FONT
+       Reads the B register, and maps the font ram to DCPU-16 ram starting
+       at address B. See below for a description of font ram.
+       If B is 0, the default font is used instead.
+2: MEM_MAP_PALETTE
+       Reads the B register, and maps the palette ram to DCPU-16 ram starting
+       at address B. See below for a description of palette ram.
+       If B is 0, the default palette is used instead.
+3: SET_BORDER_COLOR
+       Reads the B register, and sets the border color to palette index B&0xF
+4: MEM_DUMP_FONT
+       Reads the B register, and writes the default font data to DCPU-16 ram
+       starting at address B.
+       Halts the DCPU-16 for 256 cycles
+5: MEM_DUMP_PALETTE
+       Reads the B register, and writes the default palette data to DCPU-16
+       ram starting at address B.
+       Halts the DCPU-16 for 16 cycles

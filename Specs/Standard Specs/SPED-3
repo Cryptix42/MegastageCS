@@ -1,0 +1,37 @@
+Name: Mackapar Suspended Particle Exciter Display (SPED-3)
+ID: 0x42babf3c
+version: 0x0003
+Manufactorer: 0x1eb37e91 (MACKAPAR)
+
+A Behavior:
+
+0 Poll device. Sets B to the current state (see below) and C to the last error
+   since the last device poll.
+   States:
+   0x0000 STATE_NO_DATA No vertices queued up, device is in stand-by
+   0x0001 STATE_RUNNING The device is projecting lines
+   0x0002 STATE_TURNING The device is projecting lines and turning
+   Errors:
+   0x0000 ERROR_NONE There's been no error since the last poll.
+   0xffff ERROR_BROKEN There's been some major software or hardware problem, try turning off and turning on the device again.
+   
+1 Map region. Sets the memory map offset to X, and the total number of vertices
+   to render to Y. See below for the encoding information.
+
+2 Rotate device. Sets the target rotation for the device to X%360 degrees.
+    .-----------------.
+----! VERTEX ENCODING !---------------------------------------------------------
+    '-----------------'
+  
+Each vertex occupies two words of information in the main DCPU RAM. The data is
+encoded as (in LSB-0 format):
+ First word: YYYYYYYYXXXXXXXX
+Second word: 00000ICCZZZZZZZZ
+Where XXXXXXXX is the X-coordinate of the vertex, YYYYYYYY is the Y-coordinate,
+ZZZZZZZZ is the Z-coordinate, CC is color, and I is intensity.
+Z is deeper into the screen, if the device is placed face up on the ground, this
+translates to "up" relative to the user.
+Possible color values are 0: black, 1: red, 2: green, 3: blue.
+If the intensity bit is set, the color is drawn as more intense.
+The black color is meant to barely be visible at all, except for in very dim
+environments, or if the intensity bit is set.

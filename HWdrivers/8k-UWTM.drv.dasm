@@ -1,6 +1,0 @@
-; *************************
-; Project: MegastageCS
-; File: 8k-UWTM.drv.dasm
-; *************************
-.define uwtm_id_a 0x4760
-.define uwtm_id_b 0xddf1

@@ -1,0 +1,733 @@
+License : CC BY-SA 3.0 http://creativecommons.org/licenses/by-sa/3.0/
+
+TR3200 (Trillek Risc cpu 32 00) Specification
+====================================
+Version 0.9 (WIP) 
+
+
+SUMMARY
+=======
+
+ * 32 bit RISC CPU
+ * 11 general purpose registers (%r0 to %r10)
+ * Multiplication/Quotient register (%y)
+ * Base Pointer (%bp) and Stack Pointer (%sp) 
+ * Flags/Enable bits Register (%flags)
+ * Interrupt Address (%ia)
+ * Little Endian
+
+In this document, anything within [brackets] is shorthand for 
+"the value of the RAM at the location of the value inside the brackets". 
+For example, %sp register is "stack pointer", but [%sp] means the value of the RAM 
+at the location the stack pointer is pointing. Also in the notation we will use
+BYTES for 8 bit values, WORDS for 16 bit values and DWORDs for 32 bit values. 
+
+The TR3200 instruction set is based in 32 bit dwords, so each time that the PC 
+is incremented, is incremented by four. Also is Little Endian, so the MSB of a 
+word or dword is stored in the lowest address, and the LSB is stored in the 
+highest address.
+
+Whenever the CPU needs to read a instruction, it reads [PC], then increases PC
+by four as a instruction uses dword. Shorthand for this is [PC+4]. In some 
+cases, the CPU will modify a value before reading it, in this case the 
+shorthand is [++X]. When we say that the TR3200 Push a value to the Stack, 
+writes these value at [--%sp]. When we say that TR3200 Pops a value from the 
+stack, reads a value from [%sp++]. Remember that we work with 32 bit values in
+Little Endian, so to store a value in the stack, we need to push each byte of 
+the dword value.
+
+Also the internal architecture is a not pipelined 3 stages (FETCH, DECODE,
+EXECUTE), So the majority of instructions need only 3 cycles 
+to be fully executed. there are exceptions like multiplication, ram/stack instructions, etc that uses the EXECUTE stage multiples times and will need extra cycles to be fully executed.
+
+Advice, if the CPU access to an address that isn't a multiply of 4, then will 
+take one cycle more to access to these address of RAM. Code must be aligned to 4 byte boundary.
+
+
+Registers :
+ 
+  - %r0 .. %r10 - General Purpose Registers (GPR)
+  - %r11 - %y - Multiplication/Rest register
+  - %r12 - %bp - Base Pointer  -> Use as pointer to the local frame in the stack  
+  - %r13 - %sp - Stack Pointer -> Points to the last value Pushed in the stack
+  - %r14 - %ia - Interrupt Address
+  - %r15 - %flags - Flags/Enable bits register
+  - PC - Program Counter  
+
+FLAGS register :
+
+  - BIT 31-10-> Reserved
+  - BIT 9    -> ENABLE SINGLE-STEP MODE (ESS)
+  - BIT 8    -> ENABLE INTERRUPT (EI)
+  - BIT 4-7  -> Reserved
+  - BIT 3    -> INTERRUPT FLAG: 1 If an interrupt is happening. (IF)
+  - BIT 2    -> DIVISION ERROR FLAG: 1 If was a division error. (DE)
+  - BIT 1    -> OVERFLOW FLAG: 1 If an arithmetic operation overflowed. (OF)
+  - BIT 0    -> CARRY FLAG: 1 If the last ADDx/SUBx carried or borrowed a bit. (CF)
+
+If ESS bit is enable, the TR3200 will generate an appropriated interrupt with message 0.
+
+The Overflow flag gets his value, comparing the sign of the operands and the sing of the result, follow this truth table : 
+
+
+       ADDITION SIGN BITS           SUBTRACTION SIGN BITS              
+    num1sign num2sign sumsign    num1sign num2sign sumsign                
+    ---------------------------  ---------------------------
+     0       0        1           0        1        1
+     1       1        0           1        0        0
+
+BOOT/RESET STATUS
+-----------------
+
+All registers are set to 0 when the TR3200 boot-up or does a reset.
+
+
+INSTRUCTIONS FORMAT
+-------------------
+
+There is four instruction formats, that could be differentiate by the two MSB
+bits.
+
+- Form P3 : Three parameter instruction format
+- Form P2 : Two parameter instruction format
+- Form P1 : One parameter instruction format
+- Form NP : No parameter instruction format
+
+### P3 - Instructions with 3 parameters
+This format is usual for ALU  that does "a = b op c" and Load/Store instructions
+that does indexed access.
+
+    31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16 15 14 13 12 11 10 09 08 07 06 05 04 03 02 01 00
+    -----------------------------------------------------------------------------------------------
+    0  1  o  o  o  o  o  o  M  rn rn rn rn rn rn rn rn rn rn rn rn rn x  rs rs rs rs x  rd rd rd rd
+
+Where :
+
+- ooooooo is the instruction Op Code
+- M indicates that Rn is an IMMEDIATE value
+- Rn is a source register (only the LSB 4 bits) or an IMMEDIATE value if M bit is 1
+- Rs is a source register
+- Rd is the target register
+- x are reserved bits for future expansions
+
+If the M bit is 1, Rn acts like a immediate value in complement two, from 4095 to -4095. 
+Value -4096 (0b1000000000000) is a special value that indicates that the next dword is used 
+as 32 bit immediate value.
+
+
+    OpCode      Format  Meaning                 P-Code                  Cycle Count
+    -------------------------------------------------------------------------------
+    AND         000000  Bitwise And             Rd = Rs AND Rn                    3
+    OR          000001  Bitwise Or              Rd = Rs OR Rn                     3
+    XOR         000010  Bitwise XOr             Rd = Rs XOR Rn                    3
+    BITC        000011  Bitclear                Rd = Rs AND NOT Rn                3
+
+    ADD         000100  Addition                Rd = Rs + Rn                      3
+    ADDC        000101  Addition with Carry     Rd = Rs + Rn + C                  3
+    SUB         000110  Substraction            Rd = Rs - Rn                      3
+    SUBB        000111  Subs with Burrow        Rd = Rs - (Rn + C)                3
+    RSB         001000  Reverse Substract       Rd = Rn - Rs                      3
+    RSBB        001001  RSB with Burrow         Rd = Rn - (Rs + C)                3
+
+    LLS         001010  Logical Left Shift      Rd = Rs << Rn                     3
+    LRS         001011  Logical Right Shift     Rd = Rs >> Rn                     3
+    ARS         001100  Arithmetic Right Shift  Rd = Rs >>> Rn                    3
+    ROTL        001101  Rotate Left             Rd = Rs ROTL Rn                   3
+    ROTR        001110  Rotate Right            Rd = Rs ROTR Rn                   3
+
+    MUL         010000  Multiplication 32x32    Y:Rd = Rs * Rn                   20
+    SMUL        010001  Signed Multiplication   Y:Rd = Rs * Rn                   30
+    DIV         010010  Division 32:32          Rd = Rs / Rn                     30
+    SDIV        010011  Signed Division         Rd = Rs / Rn; Y = Rs % Rn        40
+
+
+    LOAD        100000  Loads a dword           Rd = ram[Rs + Rn]                 3
+    LOAD.W      100001  Loads a word            Rd = ram[Rs + Rn]                 3
+    LOAD.B      100010  Loads a byte            Rd = ram[Rs + Rn]                 3
+
+    STORE       100100  Saves a dword           ram[Rs + Rn] = Rd                 3
+    STORE.W     100101  Saves a word            ram[Rs + Rn] = Rd                 3
+    STORE.B     100110  Saves a byte            ram[Rs + Rn] = Rd                 3
+
+
+#### Notation and Examples
+Syntax : 
+
+    - *instr* Rd, Rs, Rn
+    - STORE Rs + Rn, Rd
+    - LOAD Rd, Rs + Rn
+
+Examples :
+
+    - %r7 = %r6 | %r7 : OR %r7, %r6 , %r7   ->  0x411800E7
+    - Loads dword at %r1+1024 in %r7 : LOAD %r7, %r1 + 1024 -> 0x60A8 0227
+    - %r0 = %r1 & 0xAAAA5555 : AND %r0, %r1, 0xAAAA -> 0x40FFFC20, 0xAAAA5555
+
+### P2 - Instructions with 2 parameters
+This format is usual for ALU  that does "a = op b", Load/Store, Jump/Call and skip instructions
+
+    31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16 15 14 13 12 11 10 09 08 07 06 05 04 03 02 01 00
+    -----------------------------------------------------------------------------------------------
+    1  o  o  o  o  o  o  o  M  rn rn rn rn rn rn rn rn rn rn rn rn rn rn rn rn rn rn x  rd rd rd rd
+
+Where :
+
+- oooooo is the instruction Op Code
+- M indicates that Rn is an IMMEDIATE value
+- Rn is a source register (only the LSB 4 bits) or an IMMEDIATE value if M bit is 1
+- Rd is the target or source register 
+- x are reserved bits for future expansions
+
+If the M bit is 1, Rn acts like a immediate value in complement two, from 131071 to -131071. 
+Value -131072 (0b100000000000000000) is a special value that indicates that the next dword is used 
+as 32 bit immediate value.
+    
+    
+    OpCode      Format  Meaning                 P-Code                  Cycle Count
+    -------------------------------------------------------------------------------
+    MOV         0000000 Set/Move a value        Rd = Rn                          3
+    SWP         0000001 Swaps values            Rd = Rn; Rn = Rd (M bit = 0)     3
+
+    SIGXB       0000010 Extend Sign of Byte     Rd = Rn | 0xFFFFFF00 if Rn[7]    3
+    SIGXW       0000011 Extend Sign of Word     Rd = Rn | 0xFFFF0000 if Rn[15]   3
+    
+    NOT         0000100 Does bitwise NOT        Rd = ~Rn                         3
+   
+
+    LOAD        1000000 Loads a dword           Rd = ram[Rn]                     3
+    LOAD.W      1000001 Loads a word            Rd = ram[Rn]                     3
+    LOAD.B      1000010 Loads a byte            Rd = ram[Rn]                     3
+
+    STORE       1000100 Saves a dword           ram[Rn] = Rd                     3
+    STORE.W     1000101 Saves a word            ram[Rn] = Rd                     3
+    STORE.B     1000110 Saves a byte            ram[Rn] = Rd                     3
+
+
+    IFEQ        0100000 Execute If Rd == Rn                                     +3        
+    IFNEQ       0100001 Execute If Rd != Rn                                     +3   
+
+    IFL         0100010 Execute If Rd < Rn (unsigned)                           +3
+    IFSL        0100011 Execute If Rd < Rn (signed)                             +3
+    IFLE        0100100 Execute If Rd <= Rn (unsigned)                          +3
+    IFSLE       0100101 Execute If Rd <= Rn (signed)                            +3
+
+    IFBITS      0100110 Execute If Rd & Rn != 0                                 +3
+    IFCLEAR     0100111 Execute If Rd & Rn == 0                                 +3
+    
+
+    (Absolute JUMPs/CALLs)
+    JMP         1100000 Absolute Jump           %pc = (Rd + Rn) & 0xFFFFFFFC     3
+    CALL        1100001 Absolute Jump& Push %pc %pc = (Rd + Rn) & 0xFFFFFFFC     4
+
+
+#### Notation and Examples
+Syntax : 
+
+    - *instr* Rd, Rn
+    - LOAD Rd, Rn
+    - STORE Rn, Rd
+    - JMP/CALL Rd + Rn
+
+Examples :
+
+    - Set %r10 = %sp : MOV %r10, %sp -> 0x007C000A
+    - Jumps to %r1 + 0x300 : JMP %r1 + 0x300 -> 0x60806001
+    - Writes LSB byte in %r10 to 0xFF0B0000 : STORE.B 0xFF0B0000, %r10 -> 0x42FFFFEA, 0xFF0B0000
+
+### P1 - Instructions with 1 parameters
+This format is usual for Registers manipulation, Stack operations and Jump/Call instructions
+
+    31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16 15 14 13 12 11 10 09 08 07 06 05 04 03 02 01 00
+    -----------------------------------------------------------------------------------------------
+    0  0  1  o  o  o  o  o  M  rn rn rn rn rn rn rn rn rn rn rn rn rn rn rn rn rn rn rn rn rn rn rn
+
+
+Where :
+
+- ooooo is the instruction Op Code
+- M indicates that Rn is an IMMEDIATE value
+- Rn is a source/target register (only the LSB 4 bits) or an IMMEDIATE value if M bit is 1
+
+If the M bit is 1 the Rn acts like a immediate value in complement two (0x3FFFFF to - 0x3FFFFF). There is a
+special value that is 0x400000. This special value marks that the next dword is used a 32 bit immediate value.
+
+
+    OpCode      Format  Meaning                 P-Code                  Cycle Count
+    -------------------------------------------------------------------------------
+    XCHGB       00000   Exchange Bytes of the 16 LSB  (M = 0)                     3
+    XCHGW       00001   Exchange Words  (M = 0)                                   3
+    
+    GETPC       00010   Return %pc value        Rn = %pc+4 (M = 0)                3
+  
+
+    POP         01001   Pops from the stack     %sp +=4 ; Rn = [%sp] (M = 0)      3
+    PUSH        01010   Push to the stack       [%sp] = Rn ; %sp -=4 (M = 0)      3
+
+
+    (Absolute JUMPs/CALLs)
+    JMP         11000 Absolute Jump             %pc = Rn & 0xFFFFFFFC             3
+    CALL        11001 Absolute Jump& Push %pc   %pc = Rn & 0xFFFFFFFC             4
+    
+    (Relative JUMPs/CALLs)
+    RJMP        11010 Relative Jump             %pc = (%pc + Rn) & 0xFFFFFFFC     3
+    RCALL       11011 Relative Jump& Push %pc   %pc = (&pc + Rn) & 0xFFFFFFFC     4
+   
+
+    INT         11100 Software Interrupt                                          6
+
+
+#### Notation and Examples
+Syntax : 
+
+    - *instr* Rn
+
+Examples :
+
+    - INT 21h -> 0x3C800021
+    - CALL 0xBEBECAFE -> 0x38C00000, 0xBEBECAFE
+
+### NP - Instructions without parameters
+This format is for special instructions that allows to return from a Call or Interrupt or Sleep the CPU.
+
+
+    31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16 15 14 13 12 11 10 09 08 07 06 05 04 03 02 01 00
+    -----------------------------------------------------------------------------------------------
+     0  0  0  o  o  o  o  o  o  o  o  o  o  o  o  o  o  o  o  o  o  o  o  o  o  o  o  o  o  o  o  o
+
+
+    OpCode      Format      Meaning                                     Cycle Count
+    -------------------------------------------------------------------------------
+    SLEEP       0x00000000  Sleeps the CPU and waits that a Interrupt happens    +1   
+    
+    RET         0x00000100  Return from subrutine                                 4   
+    
+    RFI         0x00000101  Return from interrupt                                 6   
+
+
+#### Notation and Examples
+Syntax : 
+    - *instr*
+
+Examples :
+    - RET -> 0x00000004 
+
+DESCRIPTION OF INSTRUCTIONS
+===========================
+  
+RAM INSTRUCTIONS
+----------------
+  
+    LOAD   Rd, Rs + Rn
+    LOAD   Rd, Rn
+    
+    LOAD.W  Rd, Rs + Rn
+    LOAD.W  Rd, Rn
+    
+    LOAD.B  Rd, Rs + Rn
+    LOAD.B  Rd, Rn
+  
+Load a dword value from RAM at (Rs + Rn) address or Rn address
+
+**LOAD.W** reads a word value, and **LOAD.B** loads a byte value. In this cases, the read value is put in the LSB of REG3 register.
+  
+  
+    STORE   Rs + Rn, Rd
+    STORE   Rn, Rd
+    
+    STORE.W Rs + Rn, Rd
+    STORE.W Rn, Rd
+    
+    STORE.B Rs + Rn, Rd
+    STORE.B Rn, Rd
+  
+Write Rd value in RAM at address Rs + Rn or at address Rn.
+
+**STORE.W** writes a word value, and **STORE.B** writes a byte value. The value is get from the LSB of Rd.
+
+
+REGISTER MANIPULATION
+---------------------
+
+    MOV Rd, Rn  
+
+    Sets Rd to Rn.
+
+
+    SWP Rd, Rn  
+
+    Swaps Rd and Rn values.
+
+
+    SIGXB Rd, Rn  
+
+    Extends the sing of LSB byte of Rn and puts in Rn.
+
+
+    SIGXW Rd, Rn  
+
+    Extends the sing of LSB word of Rn and puts in Rn.
+
+
+    XCHGW Rn  
+
+    Swaps the MSB and LSB words of Rn.
+
+    
+    XCHGB Rn  
+
+    Swaps the MSB and LSB bytes of the LSB word of Rn.
+
+Note : XCHGB and XCHW allows to swap endianes using 3 instructions.
+
+
+    GETPC Rn  
+
+    Sets Rn to %pc + 4.
+
+  
+ALU INSTRUCTIONS
+----------------
+  
+    NOT Rd, Rn
+  
+Does the bitwise NOT operation to Rn and put it in Rd.
+
+Rd = not Rn
+ 
+
+    AND Rd, Rs, Rn
+  
+Does the bitwise AND operation between Rs and Rn and put it in Rd.
+
+Rd = Rs and Rn
+  
+  
+    OR Rd, Rs, Rn
+  
+Does the bitwise OR operation between Rs and Rn and put it in Rd.
+
+Rd = Rs or Rn
+  
+  
+    XOR Rd, Rs, Rn
+  
+Do the logic XOR operation between Rs and Rn and put it in Rd.
+
+Rd = Rs xor Rn
+  
+  
+    BITC Rd, Rs, Rn
+  
+Do the logic AND operation between Rs and (NOT Rn) and put it in Rd.
+
+Rd = Rs and (not Rn)
+ 
+
+    LLS Rd, Rs, Rn
+  
+Do the Logic Left Shift of Rs, displacing the value in Rn bits and put it in Rd. 
+The output bit is stored in Carry Flag.
+
+Rd = Rs << Rn
+
+  
+    LRS Rd, Rs, Rn
+  
+Do the Logic Right Shift of Rs, displacing the value in Rn bits and put it in Rd. 
+The output bit is stored in Carry Flag.
+
+Rd = Rs >> Rn
+
+  
+    ARS Rd, Rs, Rn
+  
+Do the Arithmetic Right Shift of Rs, displacing the value in Rn bits and put it in Rd. 
+The output bit is stored in Carry Flag.
+
+Rd = Rs >>> Rn
+
+  
+    ROTL Rd, Rs, Rn
+  
+Do the Left Rotation of Rs, rotating the value in Rn bits and put it to Rd. 
+
+  
+    ROTR Rd, Rs, Rn
+  
+Do the Right Rotation of Rs, rotating the value in Rn bits and put it to Rd. 
+  
+
+    ADD Rd, Rs, Rn
+  
+Do the addition of Rs + Rn and put it on Rn. Sets Carry and Overflow bits.
+
+Rd = Rs + Rn
+  
+
+    ADDC Rd, Rs, Rn
+  
+Do the addition of Rs + Rn + C (Carry Bit) and put it on Rd.
+
+Rd = Rs + Rn + CF
+
+
+    SUB Rd, Rs, Rn
+  
+Do the subtraction of Rs - Rn and put it on Rd.
+
+Rd = Rs - Rn
+
+
+    SUBB Rd, Rs, Rn
+
+Do the subtraction of Rs - (Rn + CF) (Carry Bit) and put it on Rd. 
+
+Rd = Rs - (Rn + CF) = (Rs - Rn) - CF 
+
+
+    RSB Rd, Rs, Rn
+  
+Do the subtraction of Rn - Rs and put it on Rd.
+
+Rd = Rn - Rs
+
+
+    RSBB Rs, Rn, Rd
+
+Do the subtraction of Rn - (Rs + CF) (Carry Bit) and put it on Rd. 
+
+Rd = Rn - (Rs + CF) = (Rn - Rs) - CF
+  
+
+    MUL  Rd, Rs, Rn
+    SMUL Rd, Rs, Rn
+
+Do the 32x32=64 bit unsigned multiplication of Rs * Rn. Stores the 32 bit MSB in the Y register. 
+The LSB 32 bits are stored in Rd. SMUL does the signed operation.
+
+Y:Rd = Rs * Rn
+
+
+    DIV  Rd, Rs, Rn
+    SDIV Rd, Rs, Rn
+
+Does the unsigned integer 32/32 bit division of Rs / Rn and stores the quotient in Rd. 
+The rest is stored in Y register. SDIV does the signed operation.
+If a division error happens the Division Error flag  will be set to 1.
+
+Rd = Rs / Rn
+
+Y = Rs % Rn
+
+
+SKIP OPERATIONS
+--------------------
+
+  The skip instructions, realizes a comparison between two values If the test
+  fails, the next instruction is skiped. The conditional opcodes take one cycle
+  longer to perform if the test fails.
+
+  When they skip a conditional instruction, they will skip an additional
+  instruction at the cost of one extra cycle. This continues until a non-
+  conditional instruction has been skipped. This lets you easily chain
+  conditionals. Interrupts are not triggered while the TR3200  is skipping.
+  
+  
+    IFEQ Rd, Rn      Executes next if Rd == Rn
+    IFNEQ Rd, Rn     Executes next if Rd <> Rn
+
+    IFL Rd, Rn       Executes next if Rd <  Rn (unsigned ints)
+    IFLE Rd, Rn      Executes next if Rd <= Rn (unsigned ints)
+    IFSL Rd, Rn      Executes next if Rd <  Rn (signed ints)
+    IFSLE Rd, Rn     Executes next if Rd <= Rn (signed ints)
+    
+    IFBITS Rd, Rn    Execute next if (Rd &  Rn) != 0 (bitwise AND operation)
+    IFCLEAR Rd, Rn   Execute next if (Rd &  Rn) == 0 (bitwise AND operation)
+
+
+JUMP/CALL INSTRUCTIONS
+----------------------
+JUMP and CALL instructions ignores the two LSB bits of the resulting new %pc 
+values to enforce code alignment to 4 byte boundary. So is impossible set %pc at 
+address that not is multiple of 4, and avoiding penalty for fetching code from
+these addresses.
+
+Absolute Jump Instructions:
+
+    JMP Rd + Rn         Jumps to Rd + Rn.    (Absolute)
+    JMP Rn              Jumps to Rn.   (Relative)
+    
+Relative Jump Instructions:
+
+    RJMP Rd             Jumps to %pc + Rn.   (Relative)
+    
+Absolute Call Instructions:
+
+    CALL Rd + Rn        Jumps to Rd + Rn, and Push PC to the stack.
+    CALL Rn             Jumps to Rn and Push PC to the stack.
+
+Relative Call Instructions:
+
+    RCALL Rn            Jumps to %pc + Rn, and Push PC to the stack.
+    
+Return from Call:
+
+    RET                 Pops %pc from the stack and set %pc to these value.
+
+
+STACK INSTRUCTIONS
+------------------
+
+    PUSH Rn       
+
+Writes a dword value to the stack. As the TR3200 is little endian, It push each byte 
+of dword value to the stack, so the %sp register decrements by 4.
+  
+    POP Rn
+  
+Reads from the stack a dword value and stores it in the Rn. As the TR3200 is little endian,
+It pops each byte of dword value from the stack, so the %sp register by 4.
+
+Note that all stack operations writes/reads **ALWAYS** a dword.
+
+
+SPECIAL INSTRUCTIONS
+--------------------
+
+    NOP                  Same that MOV %r0, %r0. Does nothing
+    SLEEP                Sleeps the CPU and wakes when an hardware interrupt is triggered
+    
+ 
+INTERRUPT INSTRUCTIONS
+----------------------
+
+    INT Rn               Triggers a software interrupt with message Rn.
+
+    RFI                  Return from interrupt. Pops PC and pops %r0. 
+                         Also cleans INTERRUPT FLAG and IACK signal.
+
+  
+
+INTERRUPTS
+==========    
+
+The TR3200 uses a hybrid of interrupt vector table and interrupt polling as interrupt handle scheme.
+The **%ia** register points to a table of 256 pointers were are store the addresses of ISR. To select the entry used, the TR3200 gets the LSB of the interrupt message as table index, and the TR3200 jumps to the address that is stored in that entry. %r0 stores the full interrupt message, giving more information about who and why interrupt as been generated. The Vector table pointed by %ia have a size of 1024 bytes as uses a dword per each entry.
+
+When the **EI** bit on FLAGS register is enable, then the interrupts are enabled. 
+Interrupts can be generated by software by INT instruction or by hardware 
+getting to Low the INT line. An interrupt is processed when the TR3200  
+is ready to process a new instruction (instructions are atomic). When an 
+interrupt is being processed, the IACQ line goes to high indicating that the 
+TR3200 will ignore the INT line or any software interrupt. This means that all 
+interrupts are execute as critical code.
+
+When a Interrupt happens, the TR3200 puts IACK signal to High, gets the address from the table pointed by **%ia**, push to the  stack the values of %r0 and PC registers, sets %r0 and PC, and sets the 
+INTERRUPT FLAG to 1. If it's a software interrupt, the message is put on %r0 to 
+be processed. If it's a hardware interrupt, sets %r0 to value read in the data 
+bus. (%r0 contains always the message from software or hardware interrupt)
+
+When the interrupt service routine ends executing a RFI, the TR3200 pops PC and
+%r0 registers, sets IACK (Interrupt Acknowledge) signal to Low, and the 
+INTERRUPT FLAG is set to 0.
+
+When a software interrupt is launched but **EI** is disable or the TR3200 is 
+processing a interrupt, the INT instruction will take 6 cycles to execute, but 
+will act as a NOP.
+
+When the address in the entry of the vector table is 0, then the TR3200 will abort the interrupt like if **EI** is disable.
+
+INTERRUPT LIST
+--------------
+
+The interrupt messages should be defined by hardware devices specs. But there a
+few interrupts (called Traps) that could be launched by the TR3200 itself, when meets some
+special conditions. Actually TR3200 only implements a trap:
+
+- If single-step mode is active (**ESS** bit is enable) and INTERRUPT FLAG is not 
+enable, the TR3200  will throw an interrupt with message 0, when executes any 
+instruction.
+
+
+HARDWARE
+========  
+
+The TR3200 handles hardware devices as memory mapped. The usual addresses uses by
+the devices begins at 0xFF000000, that is the last 16 megabyte of the address space. 
+
+
+EXAMPLE MEMORY MAP
+------------------
+
+The memory map is defined by the OS and computer architecture, but here we give
+a example memory map for a 128KiB RAM+ 64KiB ROM and a graphics device at 0xFF0B0000:
+
+
+    [FFFFFFFF]  |---------|
+                |         |
+                :         :
+                : Unused  :
+                :         :
+                |         |
+    [FF0A2580]  |---------|
+                |         |
+                |  VIDEO  |
+                |   RAM   |
+                |         |
+    [FF0A0000]  |---------|
+                |         |
+                :         :
+                : Unused  :
+                :         :
+                |         |
+    [00020000]  |---------|
+                |         |
+                |  STACK  |
+                |         |
+                vvvvvvvvvvv
+                |         |
+                :         :
+                :Available:
+                :         :
+                |         |
+    [00010400]  |---------|
+                |Interrupt|
+                | Vector  |
+                |  Table  |
+    [00010000]  |---------|
+                |         |
+                |   BIOS  |
+                |   ROM   |
+                |         |
+    [00000000]  |---------|
+
+It uses a mapped video ram to represent a text only video mode, and uses a 64Kib
+ROM that works as Basic Input Output System (BIOS) that sets the hardware, gives some 
+basic ISRs, some utile functions, and launch user code from a floppy.
+
+ELECTRICAL SIGNALS
+==================
+
+- Data Bus (Input/Output) of 32 bits
+- Address Bus (Input/Output) of 32 bits
+- R/W (Output): Low to signal that the CPU ask to read an address, High to
+  signal that the CPU writes an address.
+- _INT (Input): Used to signal the CPU that a hardware interrupt is happening
+- IACQ (Output): Indicates that the CPU is processing an interrupt and will not
+  accept new interrupts. Only can accept new interrupts if is low.
+- _RESET (Input): Resets the CPU state if a edge from High to Low hapens.
+- _Wait (Input): Makes to the CPU wait at actual stage. Used to arbitrate in
+  multi-cpu systems and DMA use of the bus.
+- AD_ACT (Output): Indicates that the CPU is using the Address and Data bus
+
+
+PROTOCOLS
+---------
+
+### Sending an interrupt
+
+1.   Pull down _INT line only if IACQ is low
+2.   Wait to IACQ gets High
+3.   When IACQ gets High, put at data bus the interrupt message.
+4.   Release _INT line
+5.   Wait to IACQ gets Low -> End Of Interrupt (EOI)

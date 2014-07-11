@@ -1,0 +1,36 @@
+CryptFS bitmapping filesystem
+FS magic number: 0xA2FA
+FS Version: 1
+
+===============================================================================
+Root Folder (disk header)
+
+sector 1:
+Word 0 = FS magic number 
+Word 1 = FS Version
+Words 2 - 9 = 16 character ASCII name.
+Words 10 - 511 = File/Folder entry table (2 words per entry, maximum 251 entries)
+
+sector 2:
+Words 0 - 127 = File Ownership Bitmap: 0=freeSector 1=usedSector
+Words 128 - 256 = Corrupted Sector Bitmap: 0=goodSector 1=brokenSector
+
+===============================================================================
+Folder Header Format
+Words 0 - 7 = 16 character ASCII name.
+Words 8 - 511 = File/Folder entry table (2 words per entry, maximum 252 entries)
+
+===============================================================================
+File Header Format (file header is the first sector of a file that defines the file's info and position of the file data)
+Words 0 - 7 = The 16 character ASCII name.
+Word 8 = file length (in sectors, not including the header sector)
+Words 9 - 137 = File Fragment Bitmap: 0=otherSector 1=ownedSector
+
+NOTE: files are always loaded from disk starting with sectors nearest 0 first and sectors furthest from 0 last (sequential order)
+However, the header sector can be anywhere. The header sector is not included in the File Fragment Bitmap but is included in the
+File Ownership Bitmap.
+
+===============================================================================
+Table entry format:
+Word 0 = magic number (0xffff declares a folder which is always 1 sector, and 0x0000 is the file list terminator, anything else declares a file)
+Word 1 = header sector location of file/folder
