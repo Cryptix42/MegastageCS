@@ -2,7 +2,7 @@
 ; Project: MegastageCS
 ; File: Flight.mgr.dasm
 ; *************************
-:gyro_assigner
+:gyro_assigner;fix this!
 set push, a
 set push, b
 set push, c
@@ -16,8 +16,8 @@ set [OSerror], 0
 jsr xlcmg_select
 ife [OSerror], 1
 set pc, xlcmg_assgn_loop_brk
-jsr xlcmg_get_axis_vector
-ife b, 0x0100
+jsr xlcmg_id
+ifl b, 0x0100
 set [gyro_x_index], a
 ife b, 0x0010
 set [gyro_y_index], a
@@ -39,56 +39,6 @@ set pc, pop
 :gyro_y_torque dat 0
 :gyro_z_torque dat 0
 
-:engine_assigner
-set push, a
-set push, b
-set push, c
-set push, i
-jsr s8md_amount
-set c, a
-set a, 0xffff
-:s8md_assgn_loop
-add a, 1
-set [OSerror], 0
-jsr s8md_select
-ife [OSerror], 1
-set pc, s8md_assgn_loop_brk
-jsr s8md_get_vector
-ife b, 0b0000000000001001
-set [s8md_forward_index], a
-ife b, 0b0000000000000001
-set [s8md_reverse_index], a
-ife b, 0b0000100100000000
-set [s8md_right_index], a
-ife b, 0b0000000100000000
-set [s8md_left_index], a
-ife b, 0b0000000010010000
-set [s8md_down_index], a
-ife b, 0b0000000000010000
-set [s8md_up_index], a
-ifn a, c
-set pc, s8md_assgn_loop
-:s8md_assgn_loop_brk
-set i, pop
-set c, pop
-set b, pop
-set a, pop
-set pc, pop
-
-:s8md_forward_index dat 0
-:s8md_reverse_index dat 0
-:s8md_left_index dat 0
-:s8md_right_index dat 0
-:s8md_up_index dat 0
-:s8md_down_index dat 0
-
-:s8md_forward_power dat 0
-:s8md_reverse_power dat 0
-:s8md_left_power dat 0
-:s8md_right_power dat 0
-:s8md_up_power dat 0
-:s8md_down_power dat 0
-
 ;a=engine vector, b=power. this function will set ALL engines with vector A to power B.
 :engines_fire
 set push, a
@@ -109,7 +59,9 @@ set [OSerror], 0
 jsr s8md_select
 ife [OSerror], 1
 set pc, engine_fire_brk
-jsr s8md_get_vector
+jsr s8md_id
+and b, 0xf000
+shr b, 12
 ifn b, [engine_vector_param]
 set pc, engine_fire_loop
 set push, b
@@ -129,9 +81,9 @@ set pc, pop
 :engine_power_param dat 0
 :engine_vector_param dat 0
 
-.define vector_forward 0b0000000000001001
-.define vector_reverse 0b0000000000000001
-.define vector_up      0b0000000000010000
-.define vector_down    0x0000000010010000
-.define vector_left    0x0000000100000000
-.define vector_right   0x0000100100000000
+.define vector_forward 0x0000
+.define vector_reverse 0x0008
+.define vector_up      0x0002
+.define vector_down    0x000a
+.define vector_left    0x0001
+.define vector_right   0x0009

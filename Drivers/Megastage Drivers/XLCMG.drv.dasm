@@ -100,8 +100,8 @@ hwi [xlcmg]
 set a, pop
 set pc, pop
 
-;return b. b = 0000xxxxyyyyzzzz format vector value
-:xlcmg_get_axis_vector
+;return b.
+:xlcmg_id
 set push, a
 set a, 2
 hwi [xlcmg]

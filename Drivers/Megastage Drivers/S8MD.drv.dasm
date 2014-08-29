@@ -98,10 +98,18 @@ hwi [s8md]
 set a, pop
 set pc, pop
 
-;return b. b = 0000xxxxyyyyzzzz vector format
-:s8md_get_vector
+;return b.
+:s8md_id
 set push, a
 set a, 2
 hwi [s8md]
 set a, pop
 set pc, pop
+;0x0000 - 0x0fff Forward acceleration
+;0x8000 - 0x8fff Backward acceleration
+;0x1000 - 0x1fff Left acceleration
+;0x9000 - 0x9fff Right acceleration
+;0x2000 - 0x2fff Up acceleration
+;0xa000 - 0xafff Down acceleration
+;0x4000 - 0x4fff Non-standard orientation
+;0xc000 - 0xcfff Non-standard orientation

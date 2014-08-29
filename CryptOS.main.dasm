@@ -1,41 +1,58 @@
 ; *************************
-; Project: MegastageCS
-; File: MegastageCS.main.dasm
+; Project: CryptOS
+; File: CryptOS.main.dasm
 ; *************************
 :init
 ias interrupt_manager
-jsr gyro_assigner
-jsr weapon_manager_init
 jsr keyboard_select
+jsr lem1802_select
 jsr clock_select
-
-ife [double_buffer_state], 0
-set a, VRAM
-ife [double_buffer_state], 1
-set a, VRAM2
+jsr screen_update_set
+set [mode], prompt_mode_num
+set a, prompt_vram
 set c, vram_size
 set b, text_color
 jsr memory_bor
-set b, 60
-jsr clock_tick_set
-set a, 1
-jsr clock_int_set
-jsr update_screen
+set b, prompt_vram
+jsr lem1802_map_VRAM
 set a, 0
 set b, 0
 set c, 0
 ;============================End of init======================================
 :key_control_loop
+set c, 0
 jsr keyboard_read_buffer
 ife c, 0
 set pc, key_control_loop
-ife c, key_arrow_right
-jsr page_right
-ife c, key_arrow_left
-jsr page_left
-ife [page], 5
-set pc, keybind_key_loop
-;============================Main controls====================================
+;===mode toggles===
+ife c, key_control
+set pc, control_loop
+ife [mode], pilot_mode_num
+set pc, pilot_key_loop
+:prompt_key_loop
+set push, a
+ife c, key_backspace
+set pc, backspace
+set a, [text_pointer]
+set [cmd+a], c
+ife c, key_space
+set [cmd+a], 0
+set [typespace+a], c
+bor [typespace+a], text_color
+ifl [text_pointer], 31
+add [text_pointer], 1
+set a, pop
+set pc, key_control_loop
+:backspace
+ifg [text_pointer], 0
+sub [text_pointer], 1
+set a, [text_pointer]
+set [cmd+a], 0
+set [typespace+a], key_space
+set a, pop
+set pc, key_control_loop
+
+:pilot_key_loop
 ife c, [key_pitch_up]
 jsr pitch_up
 ife c, [key_pitch_down]
@@ -58,188 +75,58 @@ ife c, [key_primary_weapon]
 jsr fire_primary
 ife c, [key_secondary_weapon] 
 jsr fire_secondary
-ife c, [key_credits]
-jsr credits_page
-
-ife [page], 4
-set pc, target_key_loop
-ife [page], 6
-set pc, hwmanager_key_loop
-set pc, key_control_loop
-;================================Page exclusive loop controls==============================
-:keybind_key_loop
-ifg c, 0x2b
-ifl c, 0x7c
-jsr keybind_selection_set
-ife c, key_arrow_up
-jsr keybind_selection_up
-ife c, key_arrow_down
-jsr keybind_selection_down
-ife c, key_control
-jsr keybind_restore_default
+ife c, [key_scroll_up]
+jsr scroll_up
+ife c, [key_scroll_down]
+jsr scroll_down
 set pc, key_control_loop
 
-:hwmanager_key_loop
-ife c, key_enter
-jsr hardware_selection_set
-ife c, key_arrow_up
-jsr hardware_selection_up
-ife c, key_arrow_down
-jsr hardware_selection_down
-set pc, key_control_loop
+:control_loop
+ife [mode], prompt_mode_num
+set pc, pilot_mode_set
+ife [mode], pilot_mode_num
+set pc, prompt_mode_set
 
-:target_key_loop
-ife c, key_arrow_up
-jsr target_selection_up
-ife c, key_arrow_down
-jsr target_selection_down
-set pc, key_control_loop
-;=====================================End of loop==========================================
-:hardware_selection_down
-add [hardware_scroll], 1
-jsr update_screen
-set pc, pop
-
-:hardware_selection_up
-sub [hardware_scroll], 1
-jsr update_screen
-set pc, pop
-
-:hardware_selection_set
-
-set pc, pop
-
-:keybind_restore_default
+:prompt_mode_set
 set push, a
 set push, b
 set push, c
-set a, keybindings
-set b, default_keybindings_copy
-set c, 20
-jsr memory_copy
-set c, pop
-set b, pop
-set a, pop
-jsr update_screen
-set pc, pop
-
-:keybind_selection_set
-set push, i
-set i, [keybind_selection]
-set [keybindings+i], c
-jsr update_screen
-set i, pop
-set pc, pop
-
-:keybind_selection_up
-set push, i
-set i, [keybind_selection]
-mul i, 32
-add i, 33
-set [screen_map6+i], key_space
-ifn [keybind_selection], 0
-sub [keybind_selection], 1
-ifl [keybind_selection], [keybind_scroll]
-sub [keybind_scroll], 1
-set i, [keybind_selection]
-mul i, 32
-add i, 33
-set [screen_map6+i], 0x1f
-set i, pop
-jsr update_screen
-set pc, pop
-
-:keybind_selection_down
-set push, i
-set i, [keybind_selection]
-mul i, 32
-add i, 33
-set [screen_map6+i], key_space
-ifn [keybind_selection], keybind_selection_end
-add [keybind_selection], 1
-set i, [keybind_scroll]
-add i, 10
-ife [keybind_selection], i
-add [keybind_scroll], 1
-set i, [keybind_selection]
-mul i, 32
-add i, 33
-set [screen_map6+i], 0x1f
-set i, pop
-jsr update_screen
-set pc, pop
-
-:target_selection_up
-set push, b
-set push, c
-set a, 0
-jsr hta90_select
-add [target_index], 1
-and [target_index], 0x000f
-set c, [target_index]
-set b, hta_signature_dump
-jsr hta90_get_signatures
-set b, [hta_signature_dump+c]
-set [target], b
-jsr update_screen
-set c, pop
-set b, pop
-set pc, pop
-
-:target_selection_down
-set push, a
-set push, b
-set push, c
-set a, 0
-jsr hta90_select
-sub [target_index], 1
-and [target_index], 0x000f
-jsr update_screen
-set c, pop
-set b, pop
-set a, pop
-set pc, pop
-
-:page_right
-ifn [page], end_page
-add [page], 1
-jsr update_screen
-set pc, pop
-
-:page_left
-ifn [page], 0
-sub [page], 1
-jsr update_screen
-set pc, pop
-
-:credits_page
-set push, a
-set push, b
-set push, c
-set push, i
-set a, VRAM
+set [mode], prompt_mode_num
+set a, prompt_vram
 set c, vram_size
-set b, screen_credits
-jsr memory_copy
 set b, text_color
 jsr memory_bor
-ife [credits_bool], 0
-set pc, credit_bool_check_skp
-jsr update_screen
-set [credits_bool], 0
-set i, pop
+set a, 0
+jsr lem1802_select
+set b, prompt_vram
+jsr lem1802_map_VRAM
 set c, pop
 set b, pop
 set a, pop
-set pc, pop
-:credit_bool_check_skp
-set [credits_bool], 1
-set i, pop
+set pc, key_control_loop
+
+:pilot_mode_set
+set push, a
+set push, b
+set push, c
+set [mode], pilot_mode_num
+jsr update_pilot_screen
 set c, pop
 set b, pop
 set a, pop
+set pc, key_control_loop
+;=====================================End of loop==========================================
+:scroll_up
+ifg [scroll], 0
+sub [scroll], 1
+jsr update_pilot_screen
 set pc, pop
-:credits_bool dat 0
+
+:scroll_down
+ifl [scroll], 22
+add [scroll], 1
+jsr update_pilot_screen
+set pc, pop
 
 :fire_primary
 jsr lasers_fire
@@ -376,7 +263,53 @@ set pc, pause
 :end
 set pc, end
 
-;===========================================Imports===============================================
+:keybindings
+:key_pitch_up dat key_w
+:key_pitch_down dat key_s
+:key_yaw_right dat key_d
+:key_yaw_left dat key_a
+:key_roll_clockwise dat key_e
+:key_roll_counterwise dat key_q
+:key_throttle_up dat key_r
+:key_throttle_down dat key_f
+:key_throttle_cut dat key_x
+:key_primary_weapon dat key_1
+:key_secondary_weapon dat key_2
+:key_scroll_up dat key_arrow_up
+:key_scroll_down dat key_arrow_down
+dat key_space
+dat key_space
+dat key_space
+dat key_space
+dat key_space
+dat key_space
+dat key_space
+dat 0
+:default_keybindings_copy
+dat key_w, key_s, key_d, key_a, key_e, key_q, key_r, key_f, key_x, key_1, key_2, key_arrow_up
+dat key_arrow_down, key_space, key_space, key_space, key_space, key_space, key_space, key_space
+
+:mode dat 0
+:text_pointer dat 0
+:cmd dat 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+:prompt_vram
+dat "======CryptOS Prompt (WIP)======"
+:typespace 
+dat "                                "
+dat "--------------------------------"
+dat "                                "
+dat "                                "
+dat "        Press control to        "
+dat "        toggle pilot mode       "
+dat "                                "
+dat "                                "
+dat "                                "
+dat "                                "
+dat "                                "
+.define prompt_mode_num 0
+.define pilot_mode_num 1
+
+;==============================Imports==================================
 .include Drivers\Megastage Drivers\8k-UWTM.drv.dasm
 .include Drivers\Megastage Drivers\Battery.drv.dasm
 .include Drivers\Megastage Drivers\EIVD-16.drv.dasm
@@ -395,8 +328,8 @@ set pc, end
 .include Drivers\Standard Drivers\LEM1802.drv.dasm
 .include Drivers\Standard Drivers\M35FDFileDriver.drv.dasm
 .include Libraries\Utility.lib.dasm
-.include Managers\Display.mgr.dasm
 .include Managers\Error.mgr.dasm
 .include Managers\Flight.mgr.dasm
 .include Managers\Interrupt.mgr.dasm
 .include Managers\Weapon.mgr.dasm
+.include CryptOSDisplay.mgr.dasm

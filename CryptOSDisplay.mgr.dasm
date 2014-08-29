@@ -1,0 +1,315 @@
+; *************************
+; Project: MegastageCS
+; File: Display.mgr.dasm
+; *************************
+
+:update_pilot_screen
+ifn [mode], pilot_mode_num
+set pc, update_screen_skp
+set push, a
+set push, b
+set push, c
+set push, i
+ife [double_buffer_state], 0
+set a, VRAM
+ife [double_buffer_state], 1
+set a, VRAM2
+set c, vram_size
+set b, [scroll]
+mul b, 32
+add b, screen_map
+jsr memory_copy
+set b, text_color
+jsr memory_bor
+set a, 0
+jsr lem1802_select
+ife [double_buffer_state], 0
+set b, VRAM
+ife [double_buffer_state], 1
+set b, VRAM2
+jsr lem1802_map_VRAM
+xor [double_buffer_state], 1
+set i, pop
+set c, pop
+set b, pop
+set a, pop
+:update_screen_skp
+set pc, pop
+
+;======================================OrbitElements==============================================
+:update_pilot_data
+set push, a
+set push, b
+set push, c
+set a, 0
+jsr pps_select
+jsr ffa_select
+jsr ncc_select
+jsr ffa_get_soi
+set c, vector_dump
+jsr ffa_orbital_state_vector
+set b, vector_dump
+set c, ncc_dump
+jsr ncc_get_orbital_elements
+set a, [ncc_dump]
+set b, [ncc_dump+1]
+set c, screen_map+64
+jsr dword_tostring
+set a, [ncc_dump+2]
+set b, [ncc_dump+3]
+add c, 32
+jsr dword_tostring
+set a, [ncc_dump+4]
+add c, 32
+jsr word_tostring
+set a, [ncc_dump+5]
+add c, 32
+jsr angle_tostring
+set a, [ncc_dump+6]
+add c, 32
+jsr angle_tostring
+set push, c
+jsr ffa_get_soi
+set c, ffa_dump
+jsr ffa_field_data
+set a, [ffa_dump]
+set b, [ffa_dump+1]
+set c, pop
+add c, 96
+jsr float_tostring
+set a, [ffa_dump+2]
+add c, 32
+jsr angle_tostring
+set a, [ffa_dump+3]
+add c, 32
+jsr angle_tostring
+set push, c
+jsr ffa_get_soi
+set c, vector_dump
+jsr ffa_orbital_state_vector
+set b, vector_dump
+set c, ncc_dump
+jsr ncc_get_times
+set c, pop
+set a, [ncc_dump]
+set b, [ncc_dump+1]
+add c, 64
+jsr dword_tostring
+set a, [ncc_dump+2]
+set b, [ncc_dump+3]
+add c, 32
+jsr dword_tostring
+set a, [ncc_dump+4]
+set b, [ncc_dump+5]
+add c, 32
+jsr dword_tostring
+set a, [ncc_dump+6]
+set b, [ncc_dump+7]
+add c, 32
+jsr dword_tostring
+set a, [ncc_dump+8]
+set b, [ncc_dump+9]
+add c, 32
+jsr dword_tostring
+set a, [ncc_dump+10]
+set b, [ncc_dump+11]
+add c, 32
+jsr dword_tostring
+set a, [ncc_dump+12]
+set b, [ncc_dump+13]
+add c, 32
+jsr dword_tostring
+set b, 0xffff
+jsr pps_get_sector
+set a, b
+add c, 64
+jsr word_tostring
+set b, pps_dump
+jsr pps_get_coords
+set a, [pps_dump]
+set b, [pps_dump+1]
+add c, 160
+jsr dword_tostring
+set a, [pps_dump+2]
+set b, [pps_dump+3]
+add c, 32
+jsr dword_tostring
+set a, [pps_dump+4]
+set b, [pps_dump+5]
+add c, 32
+jsr dword_tostring
+set c, pop
+set b, pop
+set a, pop
+set pc, pop
+
+;===========================================================================================================================
+:angle_tostring ;returns a 7 char string witha sign "-" or " ", degrees "00000", a space, and minutes "000".
+set push, ex
+set push, a
+set push, c
+set push, i
+set push, j
+set i, a
+set j, a
+and j, 0b0000000000111111
+and i, 0b0111111111000000
+shr i, 6
+ifg a, 0x7fff
+set [c], [angle_tostring_const1]
+ifl a, 0x8000
+set [c], key_space
+add c, 1
+set a, i
+jsr word_tostring
+add c, 6
+set a, j
+jsr byte_tostring
+set i, pop
+set j, pop
+set c, pop
+set a, pop
+set ex, pop
+set pc, pop
+
+:float_tostring ;like a dword but the string is in scientific notation. (a<<16)+b = ieee754 single accuracy float UNFINISHED!
+set push, a
+set push, c
+set push, b
+set push, i
+set i, a
+and i, 0b0000000001111111
+and a, 0b1111111110000000
+ifg a, 0x7fff
+set [c], [angle_tostring_const1]
+ifl a, 0x8000
+set [c], key_space
+and a, 0b0111111110000000
+set b, a
+set a, i
+jsr dword_tostring
+add c, 8
+set [c], [float_tostring_const1]
+add c, 1
+set a, b
+shr a, 7
+jsr byte_tostring
+set i, pop
+set b, pop
+set c, pop
+set a, pop
+set pc, pop
+
+:screen_update_set
+set push, a
+set push, b
+set a, 0
+jsr clock_select
+set b, 60
+hwi [clock]
+set a, 2
+set b, update_pilot_data
+hwi [clock]
+set b, pop
+set a, pop
+set pc, pop
+
+;==============Display Data==================
+.define vram_size 384
+.define text_color 0x7000
+:vector_dump
+dat 0, 0, 0, 0
+dat 0, 0, 0, 0
+dat 0, 0, 0, 0
+:hta_vector_dump
+dat 0, 0, 0, 0
+dat 0, 0, 0, 0
+dat 0, 0, 0, 0
+:ncc_dump
+dat 0, 0, 0, 0
+dat 0, 0, 0, 0
+dat 0, 0, 0, 0
+dat 0, 0, 0, 0 
+:ffa_dump
+dat 0, 0, 0
+dat 0, 0, 0
+:pps_dump
+dat 0, 0, 0, 0
+dat 0, 0, 0, 0
+:hta_signature_dump
+dat 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+:hta_data_dump
+dat 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+:angle_tostring_const1 dat "-"
+:float_tostring_const1 dat "^"
+:variable1 DAT 0
+:variable2 DAT 0
+:double_buffer_state dat 0
+:scroll dat 0
+
+
+:VRAM
+dat "                                "
+dat "                                "
+dat "                                "
+dat "                                "
+dat "                                "
+dat "        Initializing...         "
+dat "                                "
+dat "                                "
+dat "                                "
+dat "                                "
+dat "                                "
+dat "                                "
+dat 0, 0, 0, 0, 0, 0, 0, 0
+:VRAM2
+dat "                                "
+dat "                                "
+dat "                                "
+dat "                                "
+dat "                                "
+dat "        Initializing...         "
+dat "                                "
+dat "                                "
+dat "                                "
+dat "                                "
+dat "                                "
+dat "                                "
+dat 0, 0, 0, 0, 0, 0, 0, 0
+
+:screen_map
+dat "=====MegastageCS Pilot Mode====="
+dat "Orbital info:                   "
+dat "0000000000 :apoapsis (100m)     " 
+dat "0000000000 :periapse (100m)     "
+dat "00000    :eccentricity (1000ths)"
+dat "-00000 000 :inclination         "
+dat "-00000 000 :argument of periapse"
+dat "SOI info:                       "
+dat "Gravitational Parameter (kg):   "
+dat "-0000000^000                    "
+dat "-00000 000 :directional pitch   "
+dat "-00000 000 :directional yaw     "
+dat "ETA info:                       "
+dat "0000000000 :sec. till apoapsis  "
+dat "0000000000 :sec. till periapse  "
+dat "0000000000 :sec. till asc. node "
+dat "0000000000 :sec. till des. node "
+dat "0000000000 :sec. Orbital Period "
+dat "0000000000 :m/s  Orbital Speed  "
+dat "0000000000 :m/s^2 Acceleration  "
+dat "Pulsar Nav info:                "
+dat "00000 :sector number            "
+dat "32768=unknown sector            "
+dat "32769=no pulsars detected       "
+dat "32770=malfunction               "
+dat "                                "
+dat "0000000000 :X coordinate (100m) "
+dat "0000000000 :Y coordinate (100m) "
+dat "0000000000 :Z coordinate (100m) "
+dat "===========Credits=============="
+dat "Cryptix Harbinger: Creator of   "
+dat "MegastageCS & Ender Innovations "
+dat "Orlof: Megastage                "
+dat "StillNoNumber: some useful code "
+:screen_maps_end dat 0

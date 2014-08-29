@@ -120,12 +120,12 @@ add [clock_ticks+1], 1
 add [clock_ticks], ex
 set ex, pop
 
-ife [credits_bool], 0
-ifg [page], 0
-ifl [page], 5
-jsr update_screen
-ife [page], 6
-jsr update_screen
+;ife [credits_bool], 0
+;ifg [page], 0
+;ifl [page], 5
+;jsr update_screen
+;ife [page], 6
+;jsr update_screen
 
 set pc, pop
 :clock_ticks dat 0, 0

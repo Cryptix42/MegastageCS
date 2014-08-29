@@ -5,7 +5,7 @@
 :interrupt_manager ;to call the API manager simply call an interrupt with message 0xffff
 ifn a, 0xffff
 jsr a
-ife a, 0xffff
+ife a, 0xffff 
 jsr interrupt_api
 rfi 0
 

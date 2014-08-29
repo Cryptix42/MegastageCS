@@ -8,11 +8,12 @@
 .define cryptFS_version 0x0001
 .define m35fd_id_a 0x24c5
 .define m35fd_id_b 0x4fd5
-:FDError dat 0 ;0=no error, 1=no such drive, 2=FS query error, 3=wrong or no header
+:FDError dat 0 ;0=no error, 1=no such drive, 2=FS query error, 3=wrong or no header, 4=no available disk space
 :disk_drive dat 0xffff
 :disk_drive_hwi dat 0xffff
 :m35fd_state dat 0
 :m35fd_error dat 0
+:header_sector dat 0xffff
 :header_type dat 0 ;0=no data, 1=root, 2=folder, 3=file header
 :header_space
 .reserve 1024
@@ -137,6 +138,7 @@ add b, 512
 add a, 1
 jsr read_sector
 set [header_type], 1
+set [header_sector], 0
 set b, sector_allocation_1
 set c, 1024
 set a, 0
@@ -152,6 +154,11 @@ set b, sector_allocation_1
 mul a, 2
 add a, 8
 set [open_header_var1], [header_space+a]
+set push, a
+set a, header_space
+add a, peek
+add [open_header_var2], [a+1]
+set a, pop
 add a, 1
 set a, [header_space+a]
 jsr read_sector
@@ -171,6 +178,7 @@ set pc, open_header_finish
 set [header_type], 3
 ife [open_header_var1], 0xffff
 set [header_type], 2
+set [header_sector], [open_header_var2]
 set c, 512
 set a, header_space
 set b, sector_allocation_1
@@ -180,6 +188,7 @@ set a, 0
 jsr memory_fill
 set pc, open_header_finish
 :open_header_var1 dat 0
+:open_header_var2 dat 0
 
 :close_header
 set push, a
@@ -192,6 +201,7 @@ set a, 0
 jsr memory_fill
 set [disk_drive], 0xffff
 set [disk_drive_hwi], 0xffff
+set [header_sector], 0xffff
 set c, pop
 set b, pop
 set a, pop
@@ -247,6 +257,8 @@ set pc, get_name_finish
 ;disk after saving it as an entry to the opened Root/Folder header.
 :create_folder
 set push, a
+set push, b
+set push, c
 set a, 0
 set c, 512
 set b, sector_allocation_1
@@ -260,8 +272,37 @@ set [sector_allocation_1+4], [a+4]
 set [sector_allocation_1+5], [a+5]
 set [sector_allocation_1+6], [a+6]
 set [sector_allocation_1+7], [a+7]
-
-
+set push, i
+set b, sector_allocation_2
+set a, 1
+jsr read_sector
+set b, 0
+set c, 0
+set a, sector_allocation_2
+set i, 1439
+jsr search_bit
+ife b, 0xffff
+set pc, create_folder_failed
+set i, pop
+set a, b
+set b, sector_allocation_1
+jsr write_sector
+set push, a
+set b, header_space+8
+:search_entries_for_space_loop
+add b, 2
+ifn b, 0x0000
+set pc, search_entries_for_space_loop
+set [b], 0xffff
+set [b+1], pop
+set c, pop
+set b, pop
+set a, pop
+set pc, pop
+:create_folder_failed
+set [FDError], 4
+set c, pop
+set b, pop
 set a, pop
 set pc, pop
 
